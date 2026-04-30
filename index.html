@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bitácora · Consultorio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:    #1A2744;
+  --navy2:   #0F1E38;
+  --accent:  #3A7BD5;
+  --gold:    #C9A84C;
+  --gold-bg: rgba(201,168,76,0.10);
+  --green:   #2E7D52;
+  --green-bg:#E8F5EE;
+  --teal:    #0E7490;
+  --teal-bg: #ECFEFF;
+  --amber:   #D97706;
+  --amber-bg:#FFF8EC;
+  --purple:  #6B4E9B;
+  --purple-bg:#F3EEFF;
+  --red:     #C62828;
+  --red-bg:  #FFF0F0;
+  --gray:    #6B7A8D;
+  --border:  #E2E8F4;
+  --bg:      #F0F3FA;
+  --white:   #FFFFFF;
+  --text:    #1A2744;
+  --r:       14px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* ── LOGIN ── */
+#login { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 24px; background:var(--navy); }
+#login.off { display:none; }
+.lg-logo { font-size:46px; margin-bottom:14px; }
+.lg-title { font-family:'DM Serif Display',serif; font-size:24px; color:#fff; margin-bottom:4px; text-align:center; }
+.lg-sub { font-size:12px; color:rgba(255,255,255,0.38); margin-bottom:36px; text-align:center; letter-spacing:.02em; }
+.lg-cards { display:flex; flex-direction:column; gap:12px; width:100%; max-width:320px; }
+.lg-card { background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.09); border-radius:16px; padding:18px 20px; cursor:pointer; transition:all .18s; display:flex; align-items:center; gap:14px; }
+.lg-card:active { transform:scale(0.98); }
+.lg-card.asist { border-color:rgba(201,168,76,0.28); }
+.lg-card.asist:active { background:rgba(201,168,76,0.06); }
+.lg-card.cir { border-color:rgba(58,123,213,0.28); }
+.lg-card.cir:active { background:rgba(58,123,213,0.06); }
+.lg-icon { font-size:26px; flex-shrink:0; }
+.lg-card h3 { font-size:16px; font-weight:600; color:#fff; }
+
+/* ── PIN ── */
+#pin-panel { display:none; flex-direction:column; align-items:center; width:100%; max-width:300px; }
+.pin-back { align-self:flex-start; font-size:12px; color:rgba(255,255,255,0.35); cursor:pointer; margin-bottom:20px; padding:4px 0; }
+.pin-back:active { color:rgba(255,255,255,0.6); }
+.pin-av { font-size:36px; margin-bottom:8px; }
+.pin-ttl { font-size:16px; font-weight:600; color:#fff; margin-bottom:3px; }
+.pin-hint { font-size:11px; color:rgba(255,255,255,0.32); margin-bottom:22px; }
+.pin-dots { display:flex; gap:14px; margin-bottom:10px; }
+.dot { width:12px; height:12px; border-radius:50%; border:2px solid rgba(255,255,255,0.2); transition:all .15s; }
+.dot.on { background:var(--gold); border-color:var(--gold); }
+.pin-err { height:15px; font-size:11px; color:#FF6B6B; margin-bottom:14px; text-align:center; }
+.pin-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; max-width:260px; }
+.pk { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:12px; height:58px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600; color:#fff; cursor:pointer; user-select:none; transition:all .12s; }
+.pk:active { background:rgba(255,255,255,0.14); transform:scale(0.95); }
+.pk.empty { background:transparent; border-color:transparent; cursor:default; }
+
+/* ── APP ── */
+#app { display:none; padding-bottom:80px; }
+#app.on { display:block; }
+#app.asist .hdr, #app.asist .prog { background:var(--navy); }
+#app.cir   .hdr, #app.cir   .prog { background:var(--navy2); }
+#app.asist .hdr-av { background:var(--gold); }
+#app.cir   .hdr-av { background:var(--accent); }
+#app.asist .prog-f { background:var(--gold); }
+#app.cir   .prog-f { background:var(--accent); }
+#app.asist .btn-sub { background:var(--navy); }
+#app.cir   .btn-sub { background:var(--navy2); }
+#app.asist .sov { background:var(--navy); }
+#app.cir   .sov { background:var(--navy2); }
+
+/* HEADER */
+.hdr { padding:16px 18px 12px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50; box-shadow:0 2px 10px rgba(0,0,0,0.15); }
+.hdr-av { width:37px; height:37px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+.hdr-txt { flex:1; }
+.hdr-txt h1 { font-size:14px; font-weight:600; color:#fff; }
+.hdr-r { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+.hdr-date { font-size:10px; color:rgba(255,255,255,0.42); background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:3px 8px; line-height:1.4; text-align:right; }
+.hdr-id { font-size:10px; font-weight:600; color:var(--gold); background:rgba(201,168,76,0.09); border:1px solid rgba(201,168,76,0.18); border-radius:5px; padding:3px 8px; }
+.prog { padding:0 18px 10px; }
+.prog-t { height:2px; background:rgba(255,255,255,0.08); border-radius:2px; }
+.prog-f { height:100%; border-radius:2px; width:0%; transition:width .3s ease; }
+
+/* MAIN */
+main { max-width:620px; margin:0 auto; padding:16px 14px; }
+.tip { border-left:3px solid var(--gold); background:var(--gold-bg); border-radius:9px; padding:10px 13px; font-size:11px; color:var(--gray); line-height:1.6; margin-bottom:16px; }
+.tip strong { color:var(--navy); }
+.sec { margin-bottom:14px; opacity:0; transform:translateY(8px); animation:up .3s ease forwards; }
+.sec:nth-child(2){animation-delay:.03s}.sec:nth-child(3){animation-delay:.06s}
+.sec:nth-child(4){animation-delay:.09s}.sec:nth-child(5){animation-delay:.12s}.sec:nth-child(6){animation-delay:.15s}
+@keyframes up { to { opacity:1; transform:translateY(0) } }
+.sec-lbl { font-size:9px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--gray); margin-bottom:7px; padding-left:2px; }
+.card { background:var(--white); border-radius:var(--r); border:1px solid var(--border); overflow:hidden; box-shadow:0 2px 8px rgba(26,39,68,0.06); }
+.frow { display:flex; align-items:center; gap:10px; padding:0 15px; min-height:52px; border-bottom:1px solid var(--border); transition:background .12s; }
+.frow:last-child { border-bottom:none; }
+.frow:focus-within { background:#F7F9FF; }
+.frow.err { background:var(--red-bg); }
+.frow.gone { display:none; }
+.fi { font-size:16px; width:22px; text-align:center; flex-shrink:0; }
+.fin { flex:1; min-width:0; }
+.flbl { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gray); margin-bottom:2px; display:flex; align-items:center; gap:3px; }
+.req { width:5px; height:5px; background:var(--gold); border-radius:50%; display:inline-block; flex-shrink:0; }
+.fhint { font-size:9px; color:var(--gray); margin-top:2px; }
+input,select,textarea { width:100%; border:none; outline:none; background:transparent; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; color:var(--text); appearance:none; -webkit-appearance:none; padding:0; }
+input::placeholder,textarea::placeholder { color:#C5CEDF; font-weight:300; }
+select { cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A8D' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 0 center; padding-right:16px; }
+input[type="date"] { color:var(--text); }
+textarea { resize:none; min-height:48px; line-height:1.5; padding-top:2px; }
+
+/* CHIPS */
+.cw { padding:11px 15px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { padding:6px 12px; border-radius:18px; border:1.5px solid var(--border); font-size:12px; font-weight:500; color:var(--gray); cursor:pointer; transition:all .12s; user-select:none; background:var(--white); white-space:nowrap; }
+.chip:active { transform:scale(0.96); }
+.chip.sn  { background:var(--navy);   border-color:var(--navy);   color:#fff; }
+.chip.sg  { background:var(--gold);   border-color:var(--gold);   color:#fff; }
+.chip.sgr { background:var(--green);  border-color:var(--green);  color:#fff; }
+.chip.st  { background:var(--teal);   border-color:var(--teal);   color:#fff; }
+.chip.sa  { background:var(--amber);  border-color:var(--amber);  color:#fff; }
+.chip.sb  { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* COBRO CARDS */
+.cc-wrap { display:grid; gap:8px; padding:12px; }
+.cc-wrap.two   { grid-template-columns:1fr 1fr; }
+.cc-wrap.three { grid-template-columns:1fr 1fr 1fr; }
+.cc { background:var(--white); border:2px solid var(--border); border-radius:12px; padding:12px 10px 10px; cursor:pointer; transition:all .13s; text-align:center; user-select:none; }
+.cc:active { transform:scale(0.97); }
+.cc .ci { font-size:19px; margin-bottom:5px; display:block; }
+.cc .ct { font-size:11px; font-weight:700; color:var(--navy); display:block; margin-bottom:2px; }
+.cc .cd { font-size:9px; color:var(--gray); line-height:1.3; }
+.cc.sel-dir { background:var(--green-bg);  border-color:var(--green);  } .cc.sel-dir  .ct { color:var(--green);  }
+.cc.sel-seg { background:#EEF4FF;           border-color:var(--accent); } .cc.sel-seg  .ct { color:var(--accent); }
+.cc.sel-nc  { background:var(--amber-bg);   border-color:var(--amber);  } .cc.sel-nc   .ct { color:var(--amber);  }
+
+/* PANELES */
+.panel { display:none; }
+.panel.on { display:block; }
+.psec { padding:11px 15px; border-top:1px solid var(--border); }
+.psec-lbl { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gray); margin-bottom:7px; }
+.mrow { display:flex; align-items:center; gap:8px; }
+.mpfx { font-size:15px; font-weight:700; flex-shrink:0; }
+.mpfx.gr { color:var(--green); } .mpfx.tl { color:var(--teal); } .mpfx.bl { color:var(--accent); }
+.ml { font-size:20px !important; font-weight:700 !important; }
+.ml.gr { color:var(--green) !important; } .ml.tl { color:var(--teal) !important; } .ml.bl { color:var(--accent) !important; }
+.mhint { font-size:9px; color:var(--gray); margin-top:3px; }
+.pend { background:var(--amber-bg); border:1px solid rgba(217,119,6,0.18); border-radius:8px; padding:8px 11px; font-size:11px; color:var(--amber); line-height:1.5; margin-top:8px; }
+
+/* SUBMIT */
+.sub-wrap { padding:4px 0 20px; }
+.btn-sub { width:100%; color:white; border:none; border-radius:var(--r); padding:15px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; transition:all .18s; box-shadow:0 4px 14px rgba(26,39,68,0.20); }
+.btn-sub:active { transform:scale(0.985); }
+.btn-sub:disabled { background:var(--border) !important; color:var(--gray); box-shadow:none; cursor:not-allowed; }
+
+/* SUCCESS */
+.sov { display:none; position:fixed; inset:0; z-index:200; flex-direction:column; align-items:center; justify-content:center; padding:32px 22px; text-align:center; overflow-y:auto; }
+.sov.on { display:flex; animation:fi .22s ease; }
+@keyframes fi { from{opacity:0} to{opacity:1} }
+.s-ring { width:76px; height:76px; border-radius:50%; border:2px solid var(--gold); background:rgba(201,168,76,0.08); display:flex; align-items:center; justify-content:center; font-size:32px; margin-bottom:14px; flex-shrink:0; animation:pop .4s .1s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes pop { from{transform:scale(0.4);opacity:0} to{transform:scale(1);opacity:1} }
+.s-ttl { font-family:'DM Serif Display',serif; font-size:22px; color:#fff; margin-bottom:4px; }
+.s-cnt { font-size:12px; color:rgba(255,255,255,0.32); margin-bottom:14px; }
+.s-id { background:rgba(201,168,76,0.08); border:1.5px solid rgba(201,168,76,0.22); border-radius:11px; padding:11px 16px; margin-bottom:13px; width:100%; max-width:320px; }
+.s-id-l { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,0.26); margin-bottom:2px; }
+.s-id-v { font-size:19px; font-weight:700; color:var(--gold); letter-spacing:.06em; }
+.s-id-h { font-size:9px; color:rgba(255,255,255,0.18); margin-top:2px; }
+.s-sum { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 16px; width:100%; max-width:320px; text-align:left; margin-bottom:18px; }
+.sr { display:flex; justify-content:space-between; align-items:flex-start; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.06); gap:10px; }
+.sr:last-child { border-bottom:none; }
+.sk { font-size:10px; color:rgba(255,255,255,0.28); flex-shrink:0; }
+.sv { font-size:11px; color:rgba(255,255,255,0.80); font-weight:600; text-align:right; }
+.bdg { display:inline-block; padding:2px 8px; border-radius:18px; font-size:10px; font-weight:700; }
+.bdg-dir { background:var(--green-bg); color:var(--green); }
+.bdg-seg { background:#EEF4FF; color:var(--accent); }
+.bdg-nc  { background:var(--amber-bg); color:var(--amber); }
+.btn-nv { background:var(--gold); color:var(--navy); border:none; border-radius:12px; padding:13px 28px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-nv:active { transform:scale(0.97); }
+.btn-ch { margin-top:10px; background:transparent; border:1px solid rgba(255,255,255,0.10); border-radius:9px; padding:8px 16px; font-family:'DM Sans',sans-serif; font-size:11px; color:rgba(255,255,255,0.28); cursor:pointer; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lg-logo">🩺</div>
+  <div class="lg-title">Bitácora · Consultorio</div>
+  <div class="lg-sub">Omar Soler, MD, FACS</div>
+  <div class="lg-cards" id="lg-cards">
+    <div class="lg-card asist" onclick="askPin('asist')">
+      <div class="lg-icon">👩‍💼</div><div><h3>Asistente</h3></div>
+    </div>
+    <div class="lg-card cir" onclick="askPin('cir')">
+      <div class="lg-icon">👨‍⚕️</div><div><h3>Cirujano</h3></div>
+    </div>
+  </div>
+  <div id="pin-panel">
+    <div class="pin-back" onclick="cancelPin()">← Volver</div>
+    <div class="pin-av" id="pin-av">👩‍💼</div>
+    <div class="pin-ttl" id="pin-ttl">Asistente</div>
+    <div class="pin-hint">Ingresa tu PIN de 4 dígitos</div>
+    <div class="pin-dots"><span class="dot" id="d0"></span><span class="dot" id="d1"></span><span class="dot" id="d2"></span><span class="dot" id="d3"></span></div>
+    <div class="pin-err" id="pin-err"></div>
+    <div class="pin-grid">
+      <div class="pk" onclick="pKey('1')">1</div><div class="pk" onclick="pKey('2')">2</div><div class="pk" onclick="pKey('3')">3</div>
+      <div class="pk" onclick="pKey('4')">4</div><div class="pk" onclick="pKey('5')">5</div><div class="pk" onclick="pKey('6')">6</div>
+      <div class="pk" onclick="pKey('7')">7</div><div class="pk" onclick="pKey('8')">8</div><div class="pk" onclick="pKey('9')">9</div>
+      <div class="pk empty"></div><div class="pk" onclick="pKey('0')">0</div><div class="pk" onclick="pDel()">⌫</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="hdr">
+    <div class="hdr-av" id="hdrAv">🩺</div>
+    <div class="hdr-txt"><h1 id="hdrT">Bitácora</h1></div>
+    <div class="hdr-r">
+      <div class="hdr-date" id="hdrDate">—</div>
+      <div class="hdr-id" id="hdrId">OSCG-···</div>
+    </div>
+  </header>
+  <div class="prog" id="progWrap"><div class="prog-t"><div class="prog-f" id="progF"></div></div></div>
+
+  <main>
+    <div class="tip" id="tipTxt">—</div>
+
+    <!-- SEC 1: PACIENTE Y LUGAR -->
+    <div class="sec">
+      <div class="sec-lbl">Paciente y lugar</div>
+      <div class="card">
+        <div class="frow" id="rw-fecha">
+          <div class="fi">📅</div>
+          <div class="fin">
+            <div class="flbl"><span class="req"></span>Fecha del acto</div>
+            <input type="date" id="fecha">
+            <div class="fhint">Fecha real del acto — puede ser diferente a hoy.</div>
+          </div>
+        </div>
+        <div class="frow" id="rw-pac">
+          <div class="fi">👤</div>
+          <div class="fin">
+            <div class="flbl"><span class="req"></span>Nombre del paciente</div>
+            <input type="text" id="pac" placeholder="Nombre completo" autocomplete="off" autocapitalize="words">
+          </div>
+        </div>
+        <div class="frow" id="rw-hosp">
+          <div class="fi">🏥</div>
+          <div class="fin">
+            <div class="flbl"><span class="req"></span>Hospital / Lugar</div>
+            <select id="hosp">
+              <option value="">Seleccionar...</option>
+              <option>CEMESA</option><option>Bendaña</option>
+              <option>HDV</option><option>Murillo</option>
+              <option>Consultorio</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEC 2: TIPO DE ACTO -->
+    <div class="sec">
+      <div class="sec-lbl">Tipo de acto</div>
+      <div class="card">
+        <div class="cw">
+          <div class="flbl" style="margin-bottom:8px;">¿Qué fue? <span class="req" style="margin-left:3px;vertical-align:middle"></span></div>
+          <div class="chips" id="ch-tipo">
+            <div class="chip" data-v="Cirugía"             data-c="sn">🔪 Cirugía</div>
+            <div class="chip" data-v="Procedimiento menor" data-c="sn">⚕️ Procedimiento</div>
+            <div class="chip" data-v="Consulta electiva"   data-c="sn">📋 Consulta</div>
+            <!-- Solo Cirujano -->
+            <div class="chip cir-only" data-v="Consulta hospitalaria" data-c="sn" style="display:none;">🛏 Hospitalaria</div>
+            <div class="chip cir-only" data-v="Consulta emergencia"   data-c="sn" style="display:none;">🚨 Emergencia</div>
+          </div>
+          <input type="hidden" id="tipo">
+        </div>
+        <!-- Rol: solo Cirujano, solo en cirugías -->
+        <div id="rol-sec" style="display:none; border-top:1px solid var(--border);">
+          <div class="cw">
+            <div class="flbl" style="margin-bottom:8px;">Rol <span class="req" style="margin-left:3px;vertical-align:middle"></span></div>
+            <div class="chips" id="ch-rol">
+              <div class="chip" data-v="Cirujano"  data-c="sg">👨‍⚕️ Cirujano</div>
+              <div class="chip" data-v="Asistente" data-c="sg">🤝 Asistente</div>
+            </div>
+            <input type="hidden" id="rol">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEC 3: CLÍNICO -->
+    <div class="sec">
+      <div class="sec-lbl">Detalle clínico</div>
+      <div class="card">
+        <div class="frow" id="rw-dx">
+          <div class="fi">🩻</div>
+          <div class="fin">
+            <div class="flbl"><span class="req"></span>Diagnóstico</div>
+            <input type="text" id="dx" list="list-dx" placeholder="Escribir o seleccionar..." autocapitalize="sentences" autocomplete="off">
+            <datalist id="list-dx">
+              <option value="Colelitiasis"><option value="Colelitiasis asintomática">
+              <option value="Colelitiasis + sospecha coledocolitiasis">
+              <option value="Colecistitis litiásica aguda + coledocolitiasis">
+              <option value="Hernia inguinal derecha"><option value="Hernia inguinal izquierda">
+              <option value="Hernia inguinal izquierda complicada"><option value="Hernia inguinal bilateral">
+              <option value="Hernia inguinal bilateral + hernia umbilical"><option value="Hernia umbilical">
+              <option value="Hernia umbilical + sospecha hernia inguinal bilateral">
+              <option value="Hernia incisional"><option value="Hernia incisional recidivante">
+              <option value="Hernia diafragmática izquierda"><option value="Apendicitis aguda">
+              <option value="Apendicitis aguda complicada"><option value="Absceso">
+              <option value="Dolor abdominal"><option value="Dolor inguinal crónico">
+              <option value="Coproestasis"><option value="Obstrucción intestinal">
+              <option value="Perforación intestinal"><option value="Trauma torácico">
+              <option value="Quiste sinovial"><option value="Control postoperatorio">
+              <option value="Control — sin cirugía">
+            </datalist>
+          </div>
+        </div>
+
+        <!-- Procedimiento: solo cirugías -->
+        <div class="frow gone" id="rw-proc">
+          <div class="fi">⚕️</div>
+          <div class="fin">
+            <div class="flbl"><span class="req"></span>Procedimiento</div>
+            <input type="text" id="proc" list="list-proc" placeholder="Escribir o seleccionar..." autocapitalize="sentences" autocomplete="off">
+            <datalist id="list-proc">
+              <option value="Colecistectomía laparoscópica"><option value="Colecistectomía abierta">
+              <option value="CPRE + colecistectomía laparoscópica">
+              <option value="Apendicectomía laparoscópica"><option value="Apendicectomía abierta">
+              <option value="Hernioplastia inguinal derecha">
+              <option value="Hernioplastia inguinal izquierda tipo Wantz">
+              <option value="Hernioplastia inguinal bilateral">
+              <option value="Hernioplastia inguinal bilateral + umbilical">
+              <option value="Hernioplastia umbilical"><option value="Hernioplastia incisional">
+              <option value="Toracotomía posterolateral izquierda">
+              <option value="Laparotomía exploradora">
+              <option value="Laparotomía + resección y anastomosis intestinal">
+              <option value="Laparoscopia + liberación de asas + reparación de uréter">
+              <option value="Excisión absceso"><option value="Escisión quiste sinovial">
+              <option value="Evaluación quirúrgica en emergencia">
+            </datalist>
+          </div>
+        </div>
+
+        <!-- Colega: solo Cirujano, solo cirugías -->
+        <div class="frow gone" id="rw-colega">
+          <div class="fi">👥</div>
+          <div class="fin">
+            <div class="flbl">Colega <span style="font-weight:300;font-size:9px">(vacío si es cirugía propia)</span></div>
+            <input type="text" id="colega" placeholder="Nombre del colega" autocapitalize="words">
+          </div>
+        </div>
+
+        <!-- Edad + Sexo -->
+        <div class="frow" id="rw-edad">
+          <div class="fi">🎂</div>
+          <div class="fin">
+            <div class="flbl"><span class="req"></span>Edad</div>
+            <input type="number" id="edad" placeholder="Ej: 45" min="0" max="120" inputmode="numeric" style="max-width:80px;">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <div class="chip" id="chip-m" onclick="selSexo('M')" style="min-width:40px;text-align:center;">M</div>
+            <div class="chip" id="chip-f" onclick="selSexo('F')" style="min-width:40px;text-align:center;">F</div>
+            <input type="hidden" id="sexo">
+          </div>
+        </div>
+
+        <!-- Referido por -->
+        <div class="frow">
+          <div class="fi">📡</div>
+          <div class="fin">
+            <div class="flbl">Referido por <span style="font-weight:300;font-size:9px">(opcional)</span></div>
+            <input type="text" id="referido" placeholder="Dr. Selman / Instagram / Familia..." autocapitalize="words">
+          </div>
+        </div>
+
+        <div class="frow">
+          <div class="fi">📍</div>
+          <div class="fin">
+            <div class="flbl">Procedencia <span style="font-weight:300;font-size:9px">(opcional)</span></div>
+            <input type="text" id="procedencia" placeholder="Ej: Tegucigalpa, La Ceiba, El Salvador..." autocapitalize="words">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SEC 4: COBRO -->
+    <div class="sec">
+      <div class="sec-lbl">Cobro <span style="color:var(--gold);font-size:9px;">● obligatorio</span></div>
+      <div class="card">
+        <div class="cc-wrap" id="cc-wrap"></div>
+        <input type="hidden" id="cobro">
+
+        <!-- PANEL: COBRADO DIRECTO (Cobrado / Ficohsa) -->
+        <div class="panel" id="pnl-dir">
+          <div class="psec">
+            <div class="psec-lbl" id="dir-lbl">Total recibido del paciente</div>
+            <div class="mrow">
+              <span class="mpfx gr">L</span>
+              <input type="number" id="monto-dir" class="ml gr" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+            </div>
+          </div>
+          <div class="psec">
+            <div class="psec-lbl">Método de pago <span class="req" style="margin-left:2px;vertical-align:middle"></span></div>
+            <div class="chips" id="ch-met-dir">
+              <div class="chip" data-v="Efectivo"      data-c="sgr">💵 Efectivo</div>
+              <div class="chip" data-v="POS (BP)"      data-c="sgr">💳 POS</div>
+              <div class="chip" data-v="Transferencia" data-c="sgr">📲 Transferencia</div>
+            </div>
+            <input type="hidden" id="met-dir">
+          </div>
+        </div>
+
+        <!-- PANEL: CON SEGURO -->
+        <div class="panel" id="pnl-seg">
+
+          <!-- Aseguradora siempre -->
+          <div class="psec">
+            <div class="psec-lbl">Aseguradora <span class="req" style="margin-left:2px;vertical-align:middle"></span></div>
+            <div class="chips" id="ch-aseg">
+              <div class="chip" data-v="Ficohsa"          data-c="st">Ficohsa</div>
+              <div class="chip" data-v="PALIG"            data-c="st">PALIG</div>
+              <div class="chip" data-v="MAPFRE"           data-c="st">MAPFRE</div>
+              <div class="chip" data-v="ASSA"             data-c="st">ASSA</div>
+              <div class="chip" data-v="Mediprocesos"     data-c="st">Mediprocesos</div>
+              <div class="chip" data-v="Davivienda"       data-c="st">Davivienda</div>
+              <div class="chip" data-v="Seguros del País" data-c="st">Seg. del País</div>
+              <div class="chip" data-v="Otra"             data-c="st">Otra</div>
+            </div>
+            <input type="hidden" id="aseg">
+          </div>
+
+          <!-- Sub-panel CONSULTA con seguro -->
+          <div class="panel" id="pnl-seg-cons">
+            <div class="psec">
+              <div class="psec-lbl" id="seg-cons-lbl">¿Cuánto pagó el paciente? <span class="req" style="margin-left:2px;vertical-align:middle"></span></div>
+              <div class="mrow">
+                <span class="mpfx tl">L</span>
+                <input type="number" id="monto-cons-seg" class="ml tl" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+              </div>
+            </div>
+            <div class="psec">
+              <div class="psec-lbl">Método de pago <span class="req" style="margin-left:2px;vertical-align:middle"></span></div>
+              <div class="chips" id="ch-met-cons-seg">
+                <div class="chip" data-v="Efectivo"      data-c="sgr">💵 Efectivo</div>
+                <div class="chip" data-v="POS (BP)"      data-c="sgr">💳 POS</div>
+                <div class="chip" data-v="Transferencia" data-c="sgr">📲 Transferencia</div>
+              </div>
+              <input type="hidden" id="met-cons-seg">
+            </div>
+          </div>
+
+          <!-- Sub-panel CIRUGÍA con seguro -->
+          <div class="panel" id="pnl-seg-cir">
+
+            <!-- Honorarios Dr. Soler: solo modo Cirujano -->
+            <div class="psec cir-only-panel" id="psec-honorarios" style="display:none;">
+              <div class="psec-lbl">Honorarios del Dr. Soler en este acto <span class="req" style="margin-left:2px;vertical-align:middle"></span></div>
+              <div class="mrow">
+                <span class="mpfx tl">L</span>
+                <input type="number" id="monto-esperado" class="ml tl" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+              </div>
+              <div class="mhint">Su parte del arancel, sin comisión hospitalaria.</div>
+            </div>
+
+            <!-- Monto aprobado aseguradora: ambos modos -->
+            <div class="psec">
+              <div class="psec-lbl">Monto aprobado por la aseguradora (total equipo)</div>
+              <div class="mrow">
+                <span class="mpfx tl">L</span>
+                <input type="number" id="monto-aprobado" class="ml tl" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+              </div>
+              <div class="mhint">Suma aprobada para cirujano + anestesiólogo + asistente.</div>
+            </div>
+
+            <!-- Total cobrado al paciente: ambos modos -->
+            <div class="psec">
+              <div class="psec-lbl">Total recibido del paciente hoy <span style="font-weight:300;font-size:9px">(puede ser cero si es cortesía de copago)</span></div>
+              <div class="mrow">
+                <span class="mpfx gr">L</span>
+                <input type="number" id="monto-cir-seg" class="ml gr" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+              </div>
+            </div>
+
+            <!-- Método: ambos modos -->
+            <div class="psec">
+              <div class="psec-lbl">Método de pago <span class="req" style="margin-left:2px;vertical-align:middle"></span></div>
+              <div class="chips" id="ch-met-cir-seg">
+                <div class="chip" data-v="Efectivo"      data-c="sgr">💵 Efectivo</div>
+                <div class="chip" data-v="POS (BP)"      data-c="sgr">💳 POS</div>
+                <div class="chip" data-v="Transferencia" data-c="sgr">📲 Transferencia</div>
+              </div>
+              <input type="hidden" id="met-cir-seg">
+            </div>
+
+            <!-- N° autorización: solo Cirujano -->
+            <div class="psec cir-only-panel" id="psec-auth" style="display:none;">
+              <div class="psec-lbl">N° de autorización <span style="font-weight:300;font-size:9px">(si ya se tiene)</span></div>
+              <input type="text" id="auth" placeholder="Número de autorización" inputmode="numeric"
+                style="font-size:14px;font-weight:500;border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;background:var(--bg);margin-top:4px;width:100%;">
+            </div>
+
+            <!-- Cobro pendiente: solo Cirujano -->
+            <div class="psec cir-only-panel" id="psec-pend" style="display:none;">
+              <div class="chips" id="ch-pend">
+                <div class="chip" data-v="true" data-c="sa">⏳ Cobro pendiente — no recibí pago hoy</div>
+              </div>
+              <input type="hidden" id="cobro-pend">
+              <div class="pend gone" id="pend-note">Registra el acto ahora. El cobro lo agregas cuando llegue.</div>
+            </div>
+
+          </div><!-- /pnl-seg-cir -->
+        </div><!-- /pnl-seg -->
+
+        <div style="height:10px;"></div>
+      </div>
+    </div>
+
+    <!-- SEC 5: NOTA -->
+    <div class="sec">
+      <div class="sec-lbl">Nota <span style="font-weight:300;color:var(--gray);font-size:9px">(opcional)</span></div>
+      <div class="card">
+        <div class="frow" style="align-items:flex-start;padding-top:12px;padding-bottom:12px;">
+          <div class="fi" style="margin-top:2px;">📝</div>
+          <div class="fin">
+            <div class="flbl">Observaciones</div>
+            <textarea id="obs" placeholder="Cualquier detalle relevante: montos acordados, situación del paciente, cobros pendientes..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-wrap">
+      <button class="btn-sub" id="btnSub" onclick="doSubmit()"><span>✅</span> Registrar atención</button>
+    </div>
+  </main>
+
+  <!-- SUCCESS -->
+  <div class="sov" id="sov">
+    <div class="s-ring">✓</div>
+    <div class="s-ttl">¡Registrado!</div>
+    <div class="s-cnt" id="sCnt">—</div>
+    <div class="s-id"><div class="s-id-l">ID del acto</div><div class="s-id-v" id="sIdV">—</div><div class="s-id-h">Anota este ID en el recibo si aplica</div></div>
+    <div class="s-sum" id="sSum"></div>
+    <button class="btn-nv" onclick="doReset()">+ Siguiente paciente</button>
+    <button class="btn-ch" onclick="goLogin()">Cambiar usuario</button>
+  </div>
+</div>
+
+<script>
+// ── CONSTANTES ────────────────────────────────────────────────────
+const PINS = { asist:'0121', cir:'2829' };
+const ID_KEY = 'osc26';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2S7UtdTvEtKwUgxYtM1LtcMI6ocvpEmCvfyWYho5kQsQuBD3G1DVQ8GZUfiQdTKdQ/exec';
+
+// ── ESTADO ────────────────────────────────────────────────────────
+let MODE='', SESS=0, pBuf='', pTgt='';
+
+// ── FECHA ─────────────────────────────────────────────────────────
+const NOW = new Date();
+const Z = n => String(n).padStart(2,'0');
+const TODAY = `${NOW.getFullYear()}-${Z(NOW.getMonth()+1)}-${Z(NOW.getDate())}`;
+const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+// ── HELPERS ───────────────────────────────────────────────────────
+const g    = id => document.getElementById(id);
+const val  = id => { const e=g(id); return e?e.value.trim():''; };
+const show = id => { const e=g(id); if(e) e.style.display=''; };
+const hide = id => { const e=g(id); if(e) e.style.display='none'; };
+const showEl = el => { if(el) el.style.display=''; };
+const hideEl = el => { if(el) el.style.display='none'; };
+const panelOn  = id => { const e=g(id); if(e) e.classList.add('on'); };
+const panelOff = id => { const e=g(id); if(e) e.classList.remove('on'); };
+const addCls   = (id,c) => { const e=g(id); if(e) e.classList.add(c); };
+const remCls   = (id,c) => { const e=g(id); if(e) e.classList.remove(c); };
+
+// ── ID ────────────────────────────────────────────────────────────
+function initCtr(){ if(!localStorage.getItem(ID_KEY)) localStorage.setItem(ID_KEY,'59'); }
+function peekId(){ const n=parseInt(localStorage.getItem(ID_KEY)||'59')+1; g('hdrId').textContent=`OSCG-2026-${String(n).padStart(3,'0')}`; }
+function genId(){ let n=parseInt(localStorage.getItem(ID_KEY)||'59')+1; localStorage.setItem(ID_KEY,String(n)); return `OSCG-2026-${String(n).padStart(3,'0')}`; }
+
+// ── PIN ───────────────────────────────────────────────────────────
+function askPin(m){
+  pTgt=m; pBuf='';
+  g('lg-cards').style.display='none';
+  g('pin-panel').style.display='flex';
+  g('pin-av').textContent  = m==='asist'?'👩‍💼':'👨‍⚕️';
+  g('pin-ttl').textContent = m==='asist'?'Asistente':'Cirujano';
+  g('pin-err').textContent='';
+  updDots();
+}
+function cancelPin(){
+  pBuf=''; g('pin-panel').style.display='none';
+  g('lg-cards').style.display='flex';
+  g('pin-err').textContent=''; updDots();
+}
+function pKey(k){ if(pBuf.length>=4) return; pBuf+=k; updDots(); if(pBuf.length===4) setTimeout(chkPin,120); }
+function pDel(){ pBuf=pBuf.slice(0,-1); updDots(); }
+function updDots(){ for(let i=0;i<4;i++) g('d'+i).classList.toggle('on',i<pBuf.length); }
+function chkPin(){
+  if(pBuf===PINS[pTgt]){ g('pin-panel').style.display='none'; setMode(pTgt); }
+  else { g('pin-err').textContent='PIN incorrecto.'; pBuf=''; updDots(); }
+}
+
+// ── SET MODE ──────────────────────────────────────────────────────
+function setMode(m){
+  MODE=m;
+  g('login').classList.add('off');
+  const app=g('app');
+  app.className=`app on ${m}`;
+  g('hdrAv').textContent = m==='asist'?'👩‍💼':'👨‍⚕️';
+  g('hdrT').textContent  = m==='asist'?'Bitácora · Asistente':'Bitácora · Cirujano';
+  g('tipTxt').innerHTML  = m==='asist'
+    ? '<strong>Asistente</strong> — Registra cada atención. Edad obligatoria. Todos los actos cuentan.'
+    : '<strong>Cirujano</strong> — Registro completo. La fecha del acto es la que manda.';
+  g('hdrDate').innerHTML=`${DIAS[NOW.getDay()]}<br>${NOW.getDate()} ${MESES[NOW.getMonth()]} ${NOW.getFullYear()}`;
+  g('fecha').value=TODAY;
+  // Mostrar chips cir-only según modo
+  document.querySelectorAll('.cir-only').forEach(el=>{ el.style.display=m==='cir'?'':'none'; });
+  initCtr(); peekId(); buildCobro(); updProg();
+}
+
+// ── CHIPS GENÉRICOS ───────────────────────────────────────────────
+function setupChips(gId, hId, cb){
+  document.querySelectorAll(`#${gId} .chip`).forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll(`#${gId} .chip`).forEach(x=>{ x.className='chip'; });
+      c.classList.add(c.dataset.c);
+      g(hId).value=c.dataset.v;
+      if(cb) cb(c.dataset.v);
+      updProg();
+    });
+  });
+}
+
+// ── TIPO ──────────────────────────────────────────────────────────
+function esCirugia(){ const t=val('tipo'); return t==='Cirugía'||t==='Procedimiento menor'; }
+function esConsulta(){ const t=val('tipo'); return t.startsWith('Consulta')||t===''; }
+
+function onTipo(t){
+  const cir = t==='Cirugía'||t==='Procedimiento menor';
+  // Procedimiento: solo cirugías
+  cir ? remCls('rw-proc','gone') : addCls('rw-proc','gone');
+  // Rol + Colega: solo Cirujano en cirugías
+  if(MODE==='cir'&&cir){ show('rol-sec'); remCls('rw-colega','gone'); }
+  else { hide('rol-sec'); addCls('rw-colega','gone'); }
+  // Rol automático en modo Asistente
+  if(MODE==='asist') g('rol').value='Cirujano';
+  buildCobro();
+  resetCobro();
+  updProg();
+}
+setupChips('ch-tipo','tipo',onTipo);
+setupChips('ch-rol','rol');
+
+// ── HOSPITAL → TIPO AUTO ──────────────────────────────────────────
+g('hosp').addEventListener('change',()=>{
+  const hosp=val('hosp');
+  const esCons = hosp==='Consultorio';
+  const esHosp = hosp&&!esCons;
+  // Filtrar chips de tipo según hospital y modo
+  document.querySelectorAll('#ch-tipo .chip').forEach(c=>{
+    const v=c.dataset.v;
+    const esConsMode = v==='Consulta electiva'||v==='Procedimiento menor';
+    const esCirMode  = v==='Cirugía';
+    const esSoloCir  = v==='Consulta hospitalaria'||v==='Consulta emergencia';
+    // Emergencia/hospitalaria: nunca en Asistente
+    if(MODE==='asist'&&esSoloCir){ c.style.display='none'; return; }
+    if(esCons) c.style.display=esConsMode?'':'none';
+    else if(esHosp) c.style.display=(esCirMode||esSoloCir)?'':'none';
+    else c.style.display='';
+  });
+  // Reset tipo si quedó incompatible
+  const t=val('tipo');
+  const chipT=document.querySelector(`#ch-tipo .chip[data-v="${t}"]`);
+  if(t&&(!chipT||chipT.style.display==='none')){
+    g('tipo').value='';
+    document.querySelectorAll('#ch-tipo .chip').forEach(c=>c.className='chip');
+    onTipo('');
+  }
+  // Auto-seleccionar si hay opción única disponible
+  if(esCons&&!val('tipo')){
+    const chip=document.querySelector('#ch-tipo .chip[data-v="Consulta electiva"]');
+    if(chip&&chip.style.display!=='none'){ chip.classList.add(chip.dataset.c); g('tipo').value='Consulta electiva'; onTipo('Consulta electiva'); }
+  } else if(esHosp&&!val('tipo')){
+    const chip=document.querySelector('#ch-tipo .chip[data-v="Cirugía"]');
+    if(chip&&chip.style.display!=='none'){ chip.classList.add(chip.dataset.c); g('tipo').value='Cirugía'; onTipo('Cirugía'); }
+  }
+  checkFicohsa();
+  updProg();
+});
+
+// ── SEXO ──────────────────────────────────────────────────────────
+function selSexo(v){
+  g('chip-m').className='chip'+(v==='M'?' sn':'');
+  g('chip-f').className='chip'+(v==='F'?' sn':'');
+  g('sexo').value=v;
+  updProg();
+}
+
+// ── COBRO CARDS ───────────────────────────────────────────────────
+function buildCobro(){
+  const wrap=g('cc-wrap');
+  wrap.innerHTML='';
+  let cards=[];
+  const cir=esCirugia();
+  if(MODE==='asist'){
+    if(cir){
+      cards=[
+        {v:'Directo',    cls:'sel-dir',icon:'💵',title:'Directo',    desc:'Paciente pagó hoy'},
+        {v:'Con seguro', cls:'sel-seg',icon:'🛡️',title:'Con seguro', desc:'Aseguradora involucrada'},
+        {v:'Sin cobro',  cls:'sel-nc', icon:'🤝',title:'Sin cobro',  desc:'Cortesía'},
+      ];
+    } else {
+      // Consultas en Asistente
+      const showFic = val('hosp')==='Consultorio'&&val('tipo')==='Consulta electiva';
+      cards=[
+        {v:'Directo',   cls:'sel-dir',icon:'💵',title:'Directo',   desc:'Paciente pagó hoy'},
+        {v:'Sin cobro', cls:'sel-nc', icon:'🤝',title:'Sin cobro', desc:'Cortesía'},
+      ];
+      if(showFic) cards.splice(1,0,{v:'Ficohsa',cls:'sel-seg',icon:'🏥',title:'Ficohsa',desc:'Copago L 175'});
+    }
+  } else {
+    // Modo Cirujano: siempre tres opciones
+    cards=[
+      {v:'Directo',   cls:'sel-dir',icon:'💵',title:'Directo',    desc:'Sin seguro'},
+      {v:'Con seguro',cls:'sel-seg',icon:'🛡️',title:'Con seguro', desc:'Aseguradora'},
+      {v:'Sin cobro', cls:'sel-nc', icon:'🤝',title:'Sin cobro',  desc:'Cortesía'},
+    ];
+  }
+  wrap.className='cc-wrap '+(cards.length===3?'three':'two');
+  cards.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='cc'; div.dataset.v=c.v;
+    div.innerHTML='<span class="ci">'+c.icon+'</span><span class="ct">'+c.title+'</span><span class="cd">'+c.desc+'</span>';
+    div.onclick=()=>selCobro(div,c.cls);
+    wrap.appendChild(div);
+  });
+}
+
+function selCobro(card,cls){
+  document.querySelectorAll('.cc').forEach(c=>c.className='cc');
+  card.classList.add(cls);
+  const v=card.dataset.v;
+  g('cobro').value=v;
+  // Cerrar todos los paneles
+  panelOff('pnl-dir'); panelOff('pnl-seg'); panelOff('pnl-seg-cons'); panelOff('pnl-seg-cir');
+
+  if(v==='Directo'||v==='Ficohsa'){
+    panelOn('pnl-dir');
+    const lbl=g('dir-lbl'); const inp=g('monto-dir');
+    if(v==='Ficohsa'){
+      if(lbl) lbl.textContent='Copago Ficohsa (L 175 fijo)';
+      if(inp&&!inp.value) inp.value='175';
+    } else {
+      if(lbl) lbl.textContent='Total recibido (equipo completo)';
+      if(inp&&inp.value==='175') inp.value='';
+    }
+  } else if(v==='Directo'){
+    panelOn('pnl-dir');
+    const lbl=g('dir-lbl'); if(lbl) lbl.textContent='Total recibido del paciente (equipo)';
+  } else if(v==='Con seguro'){
+    panelOn('pnl-seg');
+    const cir=esCirugia();
+    if(cir){
+      panelOn('pnl-seg-cir');
+      // Campos solo Cirujano
+      document.querySelectorAll('.cir-only-panel').forEach(el=>{ el.style.display=MODE==='cir'?'':'none'; });
+    } else {
+      panelOn('pnl-seg-cons');
+      checkFicohsa();
+    }
+  }
+  updProg();
+}
+
+function resetCobro(){
+  g('cobro').value='';
+  document.querySelectorAll('.cc').forEach(c=>c.className='cc');
+  panelOff('pnl-dir'); panelOff('pnl-seg'); panelOff('pnl-seg-cons'); panelOff('pnl-seg-cir');
+}
+
+// ── FICOHSA CHECK ─────────────────────────────────────────────────
+setupChips('ch-aseg','aseg',()=>{ if(val('cobro')==='Con seguro'&&!esCirugia()) checkFicohsa(); });
+
+function checkFicohsa(){
+  if(esCirugia()||val('cobro')!=='Con seguro') return;
+  const fic = val('aseg')==='Ficohsa'&&val('hosp')==='Consultorio';
+  const lbl=g('seg-cons-lbl'); const inp=g('monto-cons-seg');
+  if(fic){
+    if(lbl) lbl.textContent='Copago Ficohsa (L 175 fijo)';
+    if(inp&&!inp.value) inp.value='175';
+  } else {
+    if(lbl) lbl.textContent='¿Cuánto pagó el paciente?';
+    if(inp&&inp.value==='175') inp.value='';
+  }
+}
+
+// ── CHIPS DE PAGO ─────────────────────────────────────────────────
+setupChips('ch-met-dir','met-dir');
+setupChips('ch-met-cons-seg','met-cons-seg');
+setupChips('ch-met-cir-seg','met-cir-seg');
+setupChips('ch-pend','cobro-pend',v=>{
+  v==='true' ? remCls('pend-note','gone') : addCls('pend-note','gone');
+  updProg();
+});
+
+// ── PROGRESS ──────────────────────────────────────────────────────
+function getReq(){
+  const cobro=val('cobro'), cir=esCirugia();
+  const base=['fecha','pac','hosp','tipo','cobro','dx','edad','sexo'];
+  if(cobro==='Directo'||cobro==='Ficohsa')
+    return [...base,'monto-dir','met-dir'];
+  if(cobro==='Con seguro'){
+    if(cir) return [...base,'aseg','monto-cir-seg','met-cir-seg'];
+    return [...base,'aseg','monto-cons-seg','met-cons-seg'];
+  }
+  return base;
+}
+function updProg(){
+  const req=getReq();
+  const filled=req.filter(id=>val(id)).length;
+  g('progF').style.width=Math.round(filled/req.length*100)+'%';
+}
+['fecha','pac','hosp','dx','edad','obs','referido'].forEach(id=>{
+  const el=g(id); if(el) el.addEventListener('input',updProg);
+});
+
+// ── VALIDAR ───────────────────────────────────────────────────────
+function validate(){
+  let ok=true;
+  document.querySelectorAll('.frow.err').forEach(el=>el.classList.remove('err'));
+  if(!val('fecha'))  { addCls('rw-fecha','err'); ok=false; }
+  if(!val('pac'))    { addCls('rw-pac','err');   ok=false; }
+  if(!val('hosp'))   { addCls('rw-hosp','err');  ok=false; }
+  if(!val('tipo'))   { alert('Selecciona el tipo de atención.'); ok=false; }
+  if(!val('cobro'))  { alert('Selecciona el estado del cobro.'); ok=false; }
+  if(!val('dx'))     { addCls('rw-dx','err'); ok=false; }
+  if(!val('edad'))   { addCls('rw-edad','err'); ok=false; }
+  if(!val('sexo'))   { alert('Selecciona el sexo del paciente (M o F).'); ok=false; }
+  if(MODE==='cir'&&esCirugia()&&!val('rol')) { alert('Selecciona el rol.'); ok=false; }
+  if(esCirugia()&&!val('proc')) { alert('Ingresa el procedimiento realizado.'); ok=false; }
+  const cobro=val('cobro'), cir=esCirugia();
+  if(cobro==='Directo'||cobro==='Ficohsa'){
+    if(!val('monto-dir')||parseFloat(val('monto-dir'))<=0){ alert('Ingresa el monto recibido.'); ok=false; }
+    if(!val('met-dir')){ alert('Selecciona el método de pago.'); ok=false; }
+  }
+  if(cobro==='Con seguro'){
+    if(!val('aseg')){ alert('Selecciona la aseguradora.'); ok=false; }
+    if(cir){
+      const pend=val('cobro-pend')==='true';
+      if(!pend){
+        if(!val('met-cir-seg')){ alert('Selecciona el método de pago.'); ok=false; }
+      }
+    } else {
+      if(!val('monto-cons-seg')||parseFloat(val('monto-cons-seg'))<=0){ alert('Ingresa el monto que pagó el paciente.'); ok=false; }
+      if(!val('met-cons-seg')){ alert('Selecciona el método de pago.'); ok=false; }
+    }
+  }
+  return ok;
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────
+function doSubmit(){
+  if(!validate()) return;
+  const btn=g('btnSub');
+  btn.disabled=true; btn.innerHTML='<span>⏳</span> Guardando...';
+  const id=genId();
+  const data={
+    id, modo:MODE, timestamp:new Date().toISOString(),
+    fecha:val('fecha'), paciente:val('pac'), hospital:val('hosp'),
+    tipo:val('tipo'), rol:val('rol')||'Cirujano', cobro:val('cobro'),
+    edad:val('edad'), sexo:val('sexo'), referido:val('referido'), procedencia:val('procedencia'),
+    monto_dir:val('monto-dir'), metodo_dir:val('met-dir'),
+    aseguradora:val('aseg'),
+    monto_cons_seg:val('monto-cons-seg'), metodo_cons_seg:val('met-cons-seg'),
+    honorarios_omar:val('monto-esperado'), monto_aprobado:val('monto-aprobado'),
+    monto_cir_seg:val('monto-cir-seg'), metodo_cir_seg:val('met-cir-seg'),
+    autorizacion:val('auth'), cobro_pend:val('cobro-pend'),
+    diagnostico:val('dx'), procedimiento:val('proc'),
+    colega:val('colega'), observaciones:val('obs'),
+  };
+  const done=(off=false)=>{ SESS++; showOk(data,off); peekId(); };
+  if(SCRIPT_URL==='https://script.google.com/macros/s/AKfycby2S7UtdTvEtKwUgxYtM1LtcMI6ocvpEmCvfyWYho5kQsQuBD3G1DVQ8GZUfiQdTKdQ/exec'){ setTimeout(()=>done(),600); return; }
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+  .then(()=>done())
+  .catch(()=>{ const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q)); done(true); });
+}
+
+// ── SUCCESS ───────────────────────────────────────────────────────
+const BLBL={'Cobrado':'bdg-dir','Ficohsa':'bdg-seg','Directo':'bdg-dir','Con seguro':'bdg-seg','Sin cobro':'bdg-nc'};
+const BLLT={'Cobrado':'Cobrado 💵','Ficohsa':'Ficohsa 🏥','Directo':'Directo 💵','Con seguro':'Con seguro 🛡️','Sin cobro':'Sin cobro 🤝'};
+const fmtL=v=>v&&parseFloat(v)>0?`L ${parseFloat(v).toLocaleString('es-HN',{minimumFractionDigits:2})}`:null;
+
+function showOk(d,off=false){
+  const[y,m,dd]=d.fecha.split('-');
+  g('sIdV').textContent=d.id;
+  let rows=`<div class="sr"><span class="sk">Paciente</span><span class="sv">${d.paciente}</span></div>`;
+  rows+=`<div class="sr"><span class="sk">Fecha</span><span class="sv">${dd}/${m}/${y} · ${d.hospital}</span></div>`;
+  rows+=`<div class="sr"><span class="sk">Tipo</span><span class="sv">${d.tipo}${d.rol&&d.rol!=='Cirujano'?' · '+d.rol:''}</span></div>`;
+  if(d.edad) rows+=`<div class="sr"><span class="sk">Edad/Sexo</span><span class="sv">${d.edad} años · ${d.sexo||'—'}</span></div>`;
+  rows+=`<div class="sr"><span class="sk">Diagnóstico</span><span class="sv">${d.diagnostico}</span></div>`;
+  if(d.procedimiento) rows+=`<div class="sr"><span class="sk">Procedimiento</span><span class="sv">${d.procedimiento}</span></div>`;
+  rows+=`<div class="sr"><span class="sk">Cobro</span><span class="sv"><span class="bdg ${BLBL[d.cobro]||''}">${BLLT[d.cobro]||d.cobro}</span></span></div>`;
+  if(fmtL(d.monto_dir)) rows+=`<div class="sr"><span class="sk">Recibido</span><span class="sv">${fmtL(d.monto_dir)} · ${d.metodo_dir}</span></div>`;
+  if(d.cobro==='Con seguro'){
+    if(d.aseguradora) rows+=`<div class="sr"><span class="sk">Seguro</span><span class="sv">${d.aseguradora}</span></div>`;
+    if(fmtL(d.monto_aprobado)) rows+=`<div class="sr"><span class="sk">Aprobado</span><span class="sv">${fmtL(d.monto_aprobado)}</span></div>`;
+    if(fmtL(d.monto_cir_seg)) rows+=`<div class="sr"><span class="sk">Recibido</span><span class="sv">${fmtL(d.monto_cir_seg)}</span></div>`;
+    if(fmtL(d.monto_cons_seg)) rows+=`<div class="sr"><span class="sk">Recibido</span><span class="sv">${fmtL(d.monto_cons_seg)}</span></div>`;
+    if(d.cobro_pend==='true') rows+=`<div class="sr"><span class="sk">Estado</span><span class="sv">⏳ Cobro pendiente</span></div>`;
+  }
+  if(off) rows+=`<div class="sr"><span class="sk" style="color:var(--amber)">⚠️</span><span class="sv" style="color:var(--amber)">Sin internet — guardado local</span></div>`;
+  g('sSum').innerHTML=rows;
+  g('sCnt').textContent=`${SESS} atención${SESS>1?'es':''} registrada${SESS>1?'s':''} hoy.`;
+  g('sov').classList.add('on');
+}
+
+// ── RESET ─────────────────────────────────────────────────────────
+function doReset(){
+  g('sov').classList.remove('on');
+  ['pac','dx','proc','obs','auth','edad','referido','procedencia','colega',
+   'monto-dir','monto-cons-seg','monto-aprobado','monto-cir-seg','monto-esperado']
+   .forEach(id=>{ const e=g(id); if(e) e.value=''; });
+  ['hosp','tipo','rol','cobro','aseg','met-dir','met-cons-seg','met-cir-seg','cobro-pend','sexo']
+   .forEach(id=>{ const e=g(id); if(e) e.value=''; });
+  document.querySelectorAll('.chip').forEach(c=>c.className='chip');
+  document.querySelectorAll('.cc').forEach(c=>c.className='cc');
+  ['pnl-dir','pnl-seg','pnl-seg-cons','pnl-seg-cir','pend-note'].forEach(panelOff);
+  addCls('pend-note','gone');
+  addCls('rw-proc','gone'); addCls('rw-colega','gone');
+  hide('rol-sec');
+  g('fecha').value=TODAY;
+  g('btnSub').disabled=false; g('btnSub').innerHTML='<span>✅</span> Registrar atención';
+  buildCobro(); updProg(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goLogin(){
+  g('sov').classList.remove('on'); g('app').classList.remove('on');
+  g('login').classList.remove('off');
+  g('lg-cards').style.display='flex'; g('pin-panel').style.display='none';
+  pBuf=''; pTgt=''; MODE=''; doReset();
+}
+</script>
+</body>
+</html>
