@@ -560,7 +560,7 @@ textarea { resize:none; min-height:48px; line-height:1.5; padding-top:2px; }
 // ── CONSTANTES ────────────────────────────────────────────────────
 const PINS = { asist:'0121', cir:'2829' };
 const ID_KEY = 'osc26';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2S7UtdTvEtKwUgxYtM1LtcMI6ocvpEmCvfyWYho5kQsQuBD3G1DVQ8GZUfiQdTKdQ/exec';
+const SCRIPT_URL = 'TU_URL_APPS_SCRIPT_AQUI';
 
 // ── ESTADO ────────────────────────────────────────────────────────
 let MODE='', SESS=0, pBuf='', pTgt='';
@@ -891,10 +891,22 @@ function doSubmit(){
     colega:val('colega'), observaciones:val('obs'),
   };
   const done=(off=false)=>{ SESS++; showOk(data,off); peekId(); };
-  if(SCRIPT_URL==='https://script.google.com/macros/s/AKfycby2S7UtdTvEtKwUgxYtM1LtcMI6ocvpEmCvfyWYho5kQsQuBD3G1DVQ8GZUfiQdTKdQ/exec'){ setTimeout(()=>done(),600); return; }
+  if(SCRIPT_URL==='TU_URL_APPS_SCRIPT_AQUI'){ setTimeout(()=>done(),600); return; }
+  // Intentar POST, si falla usar GET como fallback (Safari/CORS)
+  const encoded=encodeURIComponent(JSON.stringify(data));
+  const getUrl=SCRIPT_URL+'?data='+encoded;
   fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-  .then(()=>done())
-  .catch(()=>{ const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q)); done(true); });
+  .then(()=>{
+    // POST enviado — verificar con GET si llegó
+    fetch(getUrl,{method:'GET',mode:'no-cors'}).catch(()=>{});
+    done();
+  })
+  .catch(()=>{
+    // Fallback: usar GET
+    fetch(getUrl,{method:'GET',mode:'no-cors'})
+    .then(()=>done())
+    .catch(()=>{ const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q)); done(true); });
+  });
 }
 
 // ── SUCCESS ───────────────────────────────────────────────────────
