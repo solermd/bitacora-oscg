@@ -892,21 +892,27 @@ function doSubmit(){
   };
   const done=(off=false)=>{ SESS++; showOk(data,off); peekId(); };
   if(SCRIPT_URL==='TU_URL_APPS_SCRIPT_AQUI'){ setTimeout(()=>done(),600); return; }
-  // Intentar POST, si falla usar GET como fallback (Safari/CORS)
-  const encoded=encodeURIComponent(JSON.stringify(data));
-  const getUrl=SCRIPT_URL+'?data='+encoded;
-  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-  .then(()=>{
-    // POST enviado — verificar con GET si llegó
-    fetch(getUrl,{method:'GET',mode:'no-cors'}).catch(()=>{});
+  // Enviar via form POST en iframe oculto — evita CORS completamente
+  try {
+    const form=document.createElement('form');
+    form.method='POST';
+    form.action=SCRIPT_URL;
+    form.target='oscg-iframe';
+    form.style.display='none';
+    const input=document.createElement('input');
+    input.type='hidden';
+    input.name='payload';
+    input.value=JSON.stringify(data);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    let iframe=document.getElementById('oscg-iframe');
+    if(!iframe){ iframe=document.createElement('iframe'); iframe.name='oscg-iframe'; iframe.id='oscg-iframe'; iframe.style.display='none'; document.body.appendChild(iframe); }
+    form.submit();
+    setTimeout(()=>{ document.body.removeChild(form); },1000);
     done();
-  })
-  .catch(()=>{
-    // Fallback: usar GET
-    fetch(getUrl,{method:'GET',mode:'no-cors'})
-    .then(()=>done())
-    .catch(()=>{ const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q)); done(true); });
-  });
+  } catch(err) {
+    const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q)); done(true);
+  }
 }
 
 // ── SUCCESS ───────────────────────────────────────────────────────
