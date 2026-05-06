@@ -574,7 +574,7 @@ const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov'
 
 // ── HELPERS ───────────────────────────────────────────────────────
 const g    = id => document.getElementById(id);
-const val  = id => { const e=g(id); return e?e.value.trim():''; };
+const val  = id => { const e=g(id); return e?e.value.replace(/,/g,'').trim():''; };
 const show = id => { const e=g(id); if(e) e.style.display=''; };
 const hide = id => { const e=g(id); if(e) e.style.display='none'; };
 const showEl = el => { if(el) el.style.display=''; };
@@ -585,9 +585,19 @@ const addCls   = (id,c) => { const e=g(id); if(e) e.classList.add(c); };
 const remCls   = (id,c) => { const e=g(id); if(e) e.classList.remove(c); };
 
 // ── ID ────────────────────────────────────────────────────────────
-function initCtr(){ /* ID generado por servidor */ }
-function peekId(){ g('hdrId').textContent='OSCG-···'; }
-function genId(){ return 'OSCG-TEMP-'+Date.now(); } // reemplazado por servidor
+function initCtr(){
+  // Inicializar contador local sincronizado con Sheet
+  if(!localStorage.getItem('osc26_seq')) localStorage.setItem('osc26_seq','60');
+}
+function peekId(){
+  const seq=String(parseInt(localStorage.getItem('osc26_seq')||'60')).padStart(3,'0');
+  g('hdrId').textContent='OSCG-2026-'+seq;
+}
+function genId(){
+  // ID único por timestamp — el Apps Script lo reemplaza con OSCG-2026-NNN
+  // basado en filas reales de la Sheet (sin duplicados entre dispositivos)
+  return 'OSCG-'+Date.now();
+}
 
 // ── PIN ───────────────────────────────────────────────────────────
 function askPin(m){
@@ -835,12 +845,16 @@ function updProg(){
 // Formato visual con comas en campos de monto
 function fmtInput(el){
   el.addEventListener('input',()=>{
-    const v=el.value.replace(/[^0-9.]/g,'');
-    el.value=v; // mantener valor numérico limpio
-    const parts=v.split('.');
-    const formatted=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',')
+    // Guardar posición del cursor
+    const raw=el.value.replace(/[^0-9.]/g,'');
+    const parts=raw.split('.');
+    const withCommas=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',')
       +(parts.length>1?'.'+parts[1]:'');
-    el.setAttribute('data-display',formatted ? 'L '+formatted : '');
+    el.value=withCommas;
+  });
+  // Al enviar, limpiar comas para que el número sea válido
+  el.addEventListener('blur',()=>{
+    // valor queda con comas visualmente — val() lo limpia al leer
   });
 }
 ['monto-dir','monto-cons-seg','monto-aprobado','monto-cir-seg','monto-esperado'].forEach(id=>{
@@ -906,23 +920,19 @@ function doSubmit(){
     colega:val('colega'), observaciones:val('obs'),
   };
   if(SCRIPT_URL==='TU_URL_APPS_SCRIPT_AQUI'){ SESS++; data.id='OSCG-TEST'; showOk(data,false); peekId(); return; }
-  // Enviar via fetch POST — el servidor asigna el ID
-  delete data.id; // el servidor lo asigna
-  const btn2=g('btnSub');
+  // Enviar via fetch con no-cors (CORS limita lectura de respuesta)
+  // El ID lo genera el cliente de forma única por dispositivo+tiempo
   fetch(SCRIPT_URL,{
     method:'POST',
+    mode:'no-cors',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(data)
   })
-  .then(r=>r.json())
-  .then(res=>{
-    data.id=res.id||'OSCG-???';
+  .then(()=>{
     SESS++; showOk(data,false); peekId();
   })
   .catch(()=>{
-    // Fallback iframe si fetch falla por CORS
-    const tempId='OSCG-OFF-'+Date.now();
-    data.id=tempId;
+    // Fallback iframe
     const form=document.createElement('form');
     form.method='POST'; form.action=SCRIPT_URL;
     form.target='oscg-iframe'; form.style.display='none';
