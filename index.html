@@ -585,9 +585,9 @@ const addCls   = (id,c) => { const e=g(id); if(e) e.classList.add(c); };
 const remCls   = (id,c) => { const e=g(id); if(e) e.classList.remove(c); };
 
 // ── ID ────────────────────────────────────────────────────────────
-function initCtr(){ if(!localStorage.getItem(ID_KEY)) localStorage.setItem(ID_KEY,'59'); }
-function peekId(){ const n=parseInt(localStorage.getItem(ID_KEY)||'59')+1; g('hdrId').textContent=`OSCG-2026-${String(n).padStart(3,'0')}`; }
-function genId(){ let n=parseInt(localStorage.getItem(ID_KEY)||'59')+1; localStorage.setItem(ID_KEY,String(n)); return `OSCG-2026-${String(n).padStart(3,'0')}`; }
+function initCtr(){ /* ID generado por servidor */ }
+function peekId(){ g('hdrId').textContent='OSCG-···'; }
+function genId(){ return 'OSCG-TEMP-'+Date.now(); } // reemplazado por servidor
 
 // ── PIN ───────────────────────────────────────────────────────────
 function askPin(m){
@@ -832,6 +832,21 @@ function updProg(){
   const filled=req.filter(id=>val(id)).length;
   g('progF').style.width=Math.round(filled/req.length*100)+'%';
 }
+// Formato visual con comas en campos de monto
+function fmtInput(el){
+  el.addEventListener('input',()=>{
+    const v=el.value.replace(/[^0-9.]/g,'');
+    el.value=v; // mantener valor numérico limpio
+    const parts=v.split('.');
+    const formatted=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',')
+      +(parts.length>1?'.'+parts[1]:'');
+    el.setAttribute('data-display',formatted ? 'L '+formatted : '');
+  });
+}
+['monto-dir','monto-cons-seg','monto-aprobado','monto-cir-seg','monto-esperado'].forEach(id=>{
+  const el=g(id); if(el) fmtInput(el);
+});
+
 ['fecha','pac','hosp','dx','edad','obs','referido'].forEach(id=>{
   const el=g(id); if(el) el.addEventListener('input',updProg);
 });
@@ -890,29 +905,37 @@ function doSubmit(){
     diagnostico:val('dx'), procedimiento:val('proc'),
     colega:val('colega'), observaciones:val('obs'),
   };
-  const done=(off=false)=>{ SESS++; showOk(data,off); peekId(); };
-  if(SCRIPT_URL==='TU_URL_APPS_SCRIPT_AQUI'){ setTimeout(()=>done(),600); return; }
-  // Enviar via form POST en iframe oculto — evita CORS completamente
-  try {
+  if(SCRIPT_URL==='TU_URL_APPS_SCRIPT_AQUI'){ SESS++; data.id='OSCG-TEST'; showOk(data,false); peekId(); return; }
+  // Enviar via fetch POST — el servidor asigna el ID
+  delete data.id; // el servidor lo asigna
+  const btn2=g('btnSub');
+  fetch(SCRIPT_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    data.id=res.id||'OSCG-???';
+    SESS++; showOk(data,false); peekId();
+  })
+  .catch(()=>{
+    // Fallback iframe si fetch falla por CORS
+    const tempId='OSCG-OFF-'+Date.now();
+    data.id=tempId;
     const form=document.createElement('form');
-    form.method='POST';
-    form.action=SCRIPT_URL;
-    form.target='oscg-iframe';
-    form.style.display='none';
-    const input=document.createElement('input');
-    input.type='hidden';
-    input.name='payload';
-    input.value=JSON.stringify(data);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    let iframe=document.getElementById('oscg-iframe');
-    if(!iframe){ iframe=document.createElement('iframe'); iframe.name='oscg-iframe'; iframe.id='oscg-iframe'; iframe.style.display='none'; document.body.appendChild(iframe); }
+    form.method='POST'; form.action=SCRIPT_URL;
+    form.target='oscg-iframe'; form.style.display='none';
+    const inp=document.createElement('input');
+    inp.type='hidden'; inp.name='payload'; inp.value=JSON.stringify(data);
+    form.appendChild(inp); document.body.appendChild(form);
+    let ifr=document.getElementById('oscg-iframe');
+    if(!ifr){ ifr=document.createElement('iframe'); ifr.name='oscg-iframe'; ifr.id='oscg-iframe'; ifr.style.display='none'; document.body.appendChild(ifr); }
     form.submit();
-    setTimeout(()=>{ document.body.removeChild(form); },1000);
-    done();
-  } catch(err) {
-    const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q)); done(true);
-  }
+    setTimeout(()=>{ if(form.parentNode) document.body.removeChild(form); },1000);
+    const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q));
+    SESS++; showOk(data,true); peekId();
+  });
 }
 
 // ── SUCCESS ───────────────────────────────────────────────────────
