@@ -844,17 +844,25 @@ function updProg(){
 }
 // Formato visual con comas en campos de monto
 function fmtInput(el){
-  el.addEventListener('input',()=>{
-    // Guardar posición del cursor
-    const raw=el.value.replace(/[^0-9.]/g,'');
-    const parts=raw.split('.');
-    const withCommas=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',')
-      +(parts.length>1?'.'+parts[1]:'');
-    el.value=withCommas;
-  });
-  // Al enviar, limpiar comas para que el número sea válido
-  el.addEventListener('blur',()=>{
-    // valor queda con comas visualmente — val() lo limpia al leer
+  el.addEventListener('input',function(){
+    var pos=this.selectionStart;
+    var raw=this.value.replace(/[^0-9.]/g,'');
+    // Solo permitir un punto decimal
+    var dotIdx=raw.indexOf('.');
+    if(dotIdx!==-1) raw=raw.slice(0,dotIdx+1)+raw.slice(dotIdx+1).replace(/\./g,'');
+    // Separar entero y decimal
+    var parts=raw.split('.');
+    var intPart=parts[0];
+    var decPart=parts.length>1?'.'+parts[1]:'';
+    // Agregar comas cada 3 dígitos
+    var formatted='';
+    var count=0;
+    for(var i=intPart.length-1;i>=0;i--){
+      if(count>0&&count%3===0) formatted=','+formatted;
+      formatted=intPart[i]+formatted;
+      count++;
+    }
+    this.value=formatted+decPart;
   });
 }
 ['monto-dir','monto-cons-seg','monto-aprobado','monto-cir-seg','monto-esperado'].forEach(id=>{
