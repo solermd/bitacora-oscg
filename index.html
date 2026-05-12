@@ -928,30 +928,20 @@ function doSubmit(){
     colega:val('colega'), observaciones:val('obs'),
   };
   if(SCRIPT_URL==='TU_URL_APPS_SCRIPT_AQUI'){ SESS++; data.id='OSCG-TEST'; showOk(data,false); peekId(); return; }
-  // Enviar via fetch con no-cors (CORS limita lectura de respuesta)
-  // El ID lo genera el cliente de forma única por dispositivo+tiempo
-  fetch(SCRIPT_URL,{
-    method:'POST',
-    mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(data)
-  })
-  .then(()=>{
+  // Enviar como FormData — Apps Script lo recibe en e.parameter
+  // Sin Content-Type custom = petición "simple" = sin preflight = CORS funciona
+  const fd=new FormData();
+  fd.append('payload', JSON.stringify(data));
+  fetch(SCRIPT_URL, {method:'POST', body:fd})
+  .then(r=>r.json())
+  .then(res=>{
+    data.id = res.id || data.id;
     SESS++; showOk(data,false); peekId();
   })
   .catch(()=>{
-    // Fallback iframe
-    const form=document.createElement('form');
-    form.method='POST'; form.action=SCRIPT_URL;
-    form.target='oscg-iframe'; form.style.display='none';
-    const inp=document.createElement('input');
-    inp.type='hidden'; inp.name='payload'; inp.value=JSON.stringify(data);
-    form.appendChild(inp); document.body.appendChild(form);
-    let ifr=document.getElementById('oscg-iframe');
-    if(!ifr){ ifr=document.createElement('iframe'); ifr.name='oscg-iframe'; ifr.id='oscg-iframe'; ifr.style.display='none'; document.body.appendChild(ifr); }
-    form.submit();
-    setTimeout(()=>{ if(form.parentNode) document.body.removeChild(form); },1000);
-    const q=JSON.parse(localStorage.getItem('boff')||'[]'); q.push(data); localStorage.setItem('boff',JSON.stringify(q));
+    // Sin internet — guardar local
+    const q=JSON.parse(localStorage.getItem('boff')||'[]');
+    q.push(data); localStorage.setItem('boff',JSON.stringify(q));
     SESS++; showOk(data,true); peekId();
   });
 }
