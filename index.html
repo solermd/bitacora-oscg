@@ -755,9 +755,10 @@ function buildCobro(){
   } else {
     // Modo Cirujano
     if(esPorHospital()){
-      // Emergencia/Hospitalaria: el hospital cobra
+      // Emergencia/Hospitalaria: hospital cobra, distinguir seguro vs particular
       cards=[
-        {v:'Por hospital', cls:'sel-seg',icon:'🏥',title:'Por hospital', desc:'Hospital cobra al paciente'},
+        {v:'Hosp con seguro', cls:'sel-seg',icon:'🛡️',title:'Con seguro', desc:'Hospital cobra · paciente con aseguradora'},
+        {v:'Hosp particular', cls:'sel-dir',icon:'🏥',title:'Particular', desc:'Hospital cobra · paciente sin seguro'},
       ];
     } else if(esRolAsistente()){
       // Omar como asistente: solo conoce su expectativa, no montos del equipo
@@ -823,16 +824,24 @@ function selCobro(card,cls){
     show('psec-pend');
     const pendChip=document.querySelector('#ch-pend .chip');
     if(pendChip){ pendChip.classList.add('sa'); g('cobro-pend').value='true'; remCls('pend-note','gone'); }
-  } else if(v==='Por hospital'){
-    // Emergencia/Hospitalaria: panel simplificado — solo honorarios esperados
+  } else if(v==='Hosp con seguro'){
+    // Emergencia/Hospitalaria con seguro: pide aseguradora + honorarios
     panelOn('pnl-seg'); panelOn('pnl-seg-cir');
-    // Ocultar campos que no aplican
-    hide('psec-aseg'); hide('psec-monto-aprobado'); hide('psec-monto-cir-seg'); hide('psec-metodo-cir-seg'); hide('psec-auth');
-    // Mostrar solo honorarios + marcar pendiente
+    show('psec-aseg');
+    hide('psec-monto-aprobado'); hide('psec-monto-cir-seg'); hide('psec-metodo-cir-seg'); hide('psec-auth');
     const honSec=g('psec-honorarios'); if(honSec) honSec.style.display='';
     const lblHon=document.querySelector('#psec-honorarios .psec-lbl');
     if(lblHon) lblHon.innerHTML='Honorarios esperados del hospital <span class="req" style="margin-left:2px;vertical-align:middle"></span>';
-    // Marcar cobro pendiente automáticamente
+    show('psec-pend');
+    const pendChip=document.querySelector('#ch-pend .chip');
+    if(pendChip){ pendChip.classList.add('sa'); g('cobro-pend').value='true'; remCls('pend-note','gone'); }
+  } else if(v==='Hosp particular'){
+    // Emergencia/Hospitalaria particular: solo honorarios esperados
+    panelOn('pnl-seg'); panelOn('pnl-seg-cir');
+    hide('psec-aseg'); hide('psec-monto-aprobado'); hide('psec-monto-cir-seg'); hide('psec-metodo-cir-seg'); hide('psec-auth');
+    const honSec=g('psec-honorarios'); if(honSec) honSec.style.display='';
+    const lblHon=document.querySelector('#psec-honorarios .psec-lbl');
+    if(lblHon) lblHon.innerHTML='Honorarios esperados del hospital <span class="req" style="margin-left:2px;vertical-align:middle"></span>';
     show('psec-pend');
     const pendChip=document.querySelector('#ch-pend .chip');
     if(pendChip){ pendChip.classList.add('sa'); g('cobro-pend').value='true'; remCls('pend-note','gone'); }
@@ -904,7 +913,8 @@ function getReq(){
     if(cir) return [...base,'aseg','monto-cir-seg','met-cir-seg'];
     return [...base,'aseg','monto-cons-seg','met-cons-seg'];
   }
-  if(cobro==='Por hospital') return [...base,'monto-esperado'];
+  if(cobro==='Hosp con seguro') return [...base,'aseg','monto-esperado'];
+  if(cobro==='Hosp particular') return [...base,'monto-esperado'];
   if(cobro==='Asist con seguro') return [...base,'aseg','monto-esperado'];
   if(cobro==='Asist sin seguro') return [...base,'monto-esperado'];
   return base;
@@ -976,7 +986,11 @@ function validate(){
       if(!val('met-cons-seg')){ alert('Selecciona el método de pago.'); ok=false; }
     }
   }
-  if(cobro==='Por hospital'){
+  if(cobro==='Hosp con seguro'){
+    if(!val('aseg')){ alert('Selecciona la aseguradora.'); ok=false; }
+    if(!val('monto-esperado')||parseFloat(val('monto-esperado'))<=0){ alert('Ingresa los honorarios esperados.'); ok=false; }
+  }
+  if(cobro==='Hosp particular'){
     if(!val('monto-esperado')||parseFloat(val('monto-esperado'))<=0){ alert('Ingresa los honorarios esperados.'); ok=false; }
   }
   if(cobro==='Asist con seguro'){
@@ -1029,8 +1043,8 @@ function doSubmit(){
 }
 
 // ── SUCCESS ───────────────────────────────────────────────────────
-const BLBL={'Cobrado':'bdg-dir','Ficohsa':'bdg-seg','Directo':'bdg-dir','Con seguro':'bdg-seg','Sin cobro':'bdg-nc','Por hospital':'bdg-seg','Asist con seguro':'bdg-seg','Asist sin seguro':'bdg-dir'};
-const BLLT={'Cobrado':'Cobrado 💵','Ficohsa':'Ficohsa 🏥','Directo':'Directo 💵','Con seguro':'Con seguro 🛡️','Sin cobro':'Sin cobro 🤝','Por hospital':'Por hospital 🏥','Asist con seguro':'Asist · Con seguro 🛡️','Asist sin seguro':'Asist · Sin seguro 💵'};
+const BLBL={'Cobrado':'bdg-dir','Ficohsa':'bdg-seg','Directo':'bdg-dir','Con seguro':'bdg-seg','Sin cobro':'bdg-nc','Hosp con seguro':'bdg-seg','Hosp particular':'bdg-dir','Asist con seguro':'bdg-seg','Asist sin seguro':'bdg-dir'};
+const BLLT={'Cobrado':'Cobrado 💵','Ficohsa':'Ficohsa 🏥','Directo':'Directo 💵','Con seguro':'Con seguro 🛡️','Sin cobro':'Sin cobro 🤝','Hosp con seguro':'Hospital · Con seguro 🛡️','Hosp particular':'Hospital · Particular 🏥','Asist con seguro':'Asist · Con seguro 🛡️','Asist sin seguro':'Asist · Sin seguro 💵'};
 const fmtL=v=>v&&parseFloat(v)>0?`L ${parseFloat(v).toLocaleString('es-HN',{minimumFractionDigits:2})}`:null;
 
 function showOk(d,off=false){
