@@ -4,6 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Bitácora · Consultorio</title>
+<!-- ════════════════════════════════════════════════════════════════
+     BITÁCORA OSCG · v2 — 16-sep-2026
+     Cambio único: los dos modos ya NO tienen campos distintos.
+     El modo define color, título y la columna "Modo" (quién registró);
+     los campos ahora dependen del TIPO DE ACTO, no de quién entró.
+     Por qué: el modo Asistente estampaba rol="Cirujano" sin preguntar
+     (44 de 44 cirugías en la bitácora, cero ayudantías, cuando en el
+     modo que sí pregunta el 57% resultan ayudantías) y no permitía
+     registrar emergencias ni visitas de hospitalización — 25 de los 35
+     pacientes que no se pudieron identificar en el cuadre de colillas.
+     El backend nunca restringió nada: acepta las 32 columnas de
+     cualquier modo. La limitación era solo de este formulario.
+     Probado: 48 aserciones en Chromium headless, 0 fallas.
+     ════════════════════════════════════════════════════════════════ -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -277,9 +291,11 @@ textarea { resize:none; min-height:48px; line-height:1.5; padding-top:2px; }
             <div class="chip" data-v="Cirugía"             data-c="sn">🔪 Cirugía</div>
             <div class="chip" data-v="Procedimiento menor" data-c="sn">⚕️ Procedimiento</div>
             <div class="chip" data-v="Consulta electiva"   data-c="sn">📋 Consulta</div>
-            <!-- Solo Cirujano -->
-            <div class="chip cir-only" data-v="Consulta hospitalaria" data-c="sn" style="display:none;">🛏 Hospitalaria</div>
-            <div class="chip cir-only" data-v="Consulta emergencia"   data-c="sn" style="display:none;">🚨 Emergencia</div>
+            <!-- v2 6-sep→16-sep-2026: ya NO son exclusivos del modo Cirujano.
+                 Emergencias y visitas de hospitalizacion eran 25 de los 35 pacientes
+                 que no se pudieron identificar en el cuadre de colillas. -->
+            <div class="chip" data-v="Consulta hospitalaria" data-c="sn">🛏 Hospitalaria</div>
+            <div class="chip" data-v="Consulta emergencia"   data-c="sn">🚨 Emergencia</div>
           </div>
           <input type="hidden" id="tipo">
         </div>
@@ -632,12 +648,13 @@ function setMode(m){
   g('hdrAv').textContent = m==='asist'?'👩‍💼':'👨‍⚕️';
   g('hdrT').textContent  = m==='asist'?'Bitácora · Asistente':'Bitácora · Cirujano';
   g('tipTxt').innerHTML  = m==='asist'
-    ? '<strong>Asistente</strong> — Registra cada atención. Edad obligatoria. Todos los actos cuentan.'
+    ? '<strong>Asistente</strong> — Registra cada atención. En cirugías, marca si el Dr. fue cirujano o ayudante.'
     : '<strong>Cirujano</strong> — Registro completo. La fecha del acto es la que manda.';
   g('hdrDate').innerHTML=`${DIAS[NOW.getDay()]}<br>${NOW.getDate()} ${MESES[NOW.getMonth()]} ${NOW.getFullYear()}`;
   g('fecha').value=TODAY;
-  // Mostrar chips cir-only según modo
-  document.querySelectorAll('.cir-only').forEach(el=>{ el.style.display=m==='cir'?'':'none'; });
+  // v2: el modo ya NO oculta campos. Solo define color, titulo y el valor de
+  // la columna "Modo", que sigue diciendo quien registro.
+  document.querySelectorAll('.cir-only').forEach(el=>{ el.style.display=''; });
   initCtr(); peekId(); buildCobro(); updProg();
 }
 
@@ -662,11 +679,14 @@ function onTipo(t){
   const cir = t==='Cirugía'||t==='Procedimiento menor';
   // Procedimiento: solo cirugías
   cir ? remCls('rw-proc','gone') : addCls('rw-proc','gone');
-  // Rol + Colega: solo Cirujano en cirugías
-  if(MODE==='cir'&&cir){ show('rol-sec'); remCls('rw-colega','gone'); }
+  // v2: Rol + Colega dependen del TIPO DE ACTO, no de quien este registrando.
+  if(cir){ show('rol-sec'); remCls('rw-colega','gone'); }
   else { hide('rol-sec'); addCls('rw-colega','gone'); }
-  // Rol automático en modo Asistente
-  if(MODE==='asist') g('rol').value='Cirujano';
+  // v2: ELIMINADO el autorrelleno «if(MODE==='asist') rol='Cirujano'».
+  // Ese renglon estampaba "Cirujano" en TODA cirugia registrada por la
+  // asistente sin preguntar: 44 de 44 en la bitacora, cero ayudantias,
+  // cuando en el modo que si pregunta el 57% resultan ayudantias.
+  // No era un dato faltante: era un dato falso.
   buildCobro();
   resetCobro();
   updProg();
@@ -685,8 +705,6 @@ g('hosp').addEventListener('change',()=>{
     const esConsMode = v==='Consulta electiva'||v==='Procedimiento menor';
     const esCirMode  = v==='Cirugía';
     const esSoloCir  = v==='Consulta hospitalaria'||v==='Consulta emergencia';
-    // Emergencia/hospitalaria: nunca en Asistente
-    if(MODE==='asist'&&esSoloCir){ c.style.display='none'; return; }
     if(esCons) c.style.display=esConsMode?'':'none';
     else if(esHosp) c.style.display=(esCirMode||esSoloCir)?'':'none';
     else c.style.display='';
@@ -727,7 +745,7 @@ function esPorHospital(){
 
 // Cuando Omar opera como asistente en modo Cirujano
 function esRolAsistente(){
-  return MODE==='cir'&&val('rol')==='Asistente'&&esCirugia();
+  return val('rol')==='Asistente'&&esCirugia();
 }
 
 // ── COBRO CARDS ───────────────────────────────────────────────────
@@ -736,24 +754,10 @@ function buildCobro(){
   wrap.innerHTML='';
   let cards=[];
   const cir=esCirugia();
-  if(MODE==='asist'){
-    if(cir){
-      cards=[
-        {v:'Directo',    cls:'sel-dir',icon:'💵',title:'Directo',    desc:'Paciente pagó hoy'},
-        {v:'Con seguro', cls:'sel-seg',icon:'🛡️',title:'Con seguro', desc:'Aseguradora involucrada'},
-        {v:'Sin cobro',  cls:'sel-nc', icon:'🤝',title:'Sin cobro',  desc:'Cortesía'},
-      ];
-    } else {
-      // Consultas en Asistente
-      const showFic = val('hosp')==='Consultorio'&&val('tipo')==='Consulta electiva';
-      cards=[
-        {v:'Directo',   cls:'sel-dir',icon:'💵',title:'Directo',   desc:'Paciente pagó hoy'},
-        {v:'Sin cobro', cls:'sel-nc', icon:'🤝',title:'Sin cobro', desc:'Cortesía'},
-      ];
-      if(showFic) cards.splice(1,0,{v:'Ficohsa',cls:'sel-seg',icon:'🏥',title:'Ficohsa',desc:'Copago L 175'});
-    }
-  } else {
-    // Modo Cirujano
+  // v2 16-sep-2026: UN SOLO arbol de decision para ambos modos.
+  // La rama 'asist' que habia aqui nunca ofrecia emergencia, hospitalaria ni
+  // el caso de ayudantia — por eso esos actos casi no existen en la bitacora.
+  {
     if(esPorHospital()){
       // Emergencia/Hospitalaria: hospital cobra, distinguir seguro vs particular
       cards=[
@@ -773,9 +777,13 @@ function buildCobro(){
         {v:'Con seguro',cls:'sel-seg',icon:'🛡️',title:'Con seguro', desc:'Aseguradora'},
         {v:'Sin cobro', cls:'sel-nc', icon:'🤝',title:'Sin cobro',  desc:'Cortesía'},
       ];
+      // v2: el atajo de copago Ficohsa (L 175) ya no es exclusivo de un modo.
+      if(!cir&&val('hosp')==='Consultorio'&&val('tipo')==='Consulta electiva'){
+        cards.splice(1,0,{v:'Ficohsa',cls:'sel-seg',icon:'🏥',title:'Ficohsa',desc:'Copago L 175'});
+      }
     }
   }
-  wrap.className='cc-wrap '+(cards.length===3?'three':(cards.length===2?'two':'one'));
+  wrap.className='cc-wrap '+(cards.length>=4?'two':(cards.length===3?'three':(cards.length===2?'two':'one')));
   cards.forEach(c=>{
     const div=document.createElement('div');
     div.className='cc'; div.dataset.v=c.v;
@@ -850,8 +858,8 @@ function selCobro(card,cls){
     const cir=esCirugia();
     if(cir){
       panelOn('pnl-seg-cir');
-      // Campos solo Cirujano
-      document.querySelectorAll('.cir-only-panel').forEach(el=>{ el.style.display=MODE==='cir'?'':'none'; });
+      // v2: honorario, autorizacion y cobro pendiente visibles para ambos.
+      document.querySelectorAll('.cir-only-panel').forEach(el=>{ el.style.display=''; });
     } else {
       panelOn('pnl-seg-cons');
       checkFicohsa();
@@ -967,7 +975,7 @@ function validate(){
   if(!val('dx'))     { addCls('rw-dx','err'); ok=false; }
   if(!val('edad'))   { addCls('rw-edad','err'); ok=false; }
   if(!val('sexo'))   { alert('Selecciona el sexo del paciente (M o F).'); ok=false; }
-  if(MODE==='cir'&&esCirugia()&&!val('rol')) { alert('Selecciona el rol.'); ok=false; }
+  if(esCirugia()&&!val('rol')) { alert('Selecciona el rol: ¿el Dr. fue cirujano o ayudante?'); ok=false; }
   if(esCirugia()&&!val('proc')) { alert('Ingresa el procedimiento realizado.'); ok=false; }
   const cobro=val('cobro'), cir=esCirugia();
   if(cobro==='Directo'||cobro==='Ficohsa'){
@@ -1012,7 +1020,7 @@ function doSubmit(){
   const data={
     id, modo:MODE, timestamp:new Date().toISOString(),
     fecha:val('fecha'), paciente:val('pac'), hospital:val('hosp'),
-    tipo:val('tipo'), rol:val('rol')||'Cirujano', cobro:val('cobro'),
+    tipo:val('tipo'), rol:val('rol'), cobro:val('cobro'),
     edad:val('edad'), sexo:val('sexo'), referido:val('referido'), procedencia:val('procedencia'),
     monto_dir:val('monto-dir'), metodo_dir:val('met-dir'),
     aseguradora:val('aseg'),
