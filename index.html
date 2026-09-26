@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Bitácora · Consultorio</title>
 <!-- ════════════════════════════════════════════════════════════════
+     BITÁCORA OSCG · v3 — 20-sep-2026 · SIN PIN NI CLAVE EN EL CÓDIGO
+     Por qué: esta página es pública. La v2 traía los dos PIN escritos
+     aquí y el PIN solo se comprobaba en el navegador; el script de
+     Google no pedía nada y atendía leer, buscar y editar fichas a
+     cualquiera que tuviera su dirección.
+     Qué cambia: (1) no hay PIN ni clave en este archivo; (2) cada
+     usuario escribe SU clave una vez por teléfono — la valida el
+     servidor (Apps Script v8) y queda guardada solo en ese teléfono;
+     (3) toda orden viaja con la clave; (4) si el servidor rechaza o
+     falla, YA NO se muestra "guardado": se avisa y los datos siguen
+     en pantalla; (5) el formulario NO cambió en nada; (6) el usuario
+     Asistente registra SOLO atenciones del consultorio: las cirugías
+     y las atenciones de hospital las registra el cirujano con su
+     clave (el servidor rechaza lo contrario).
+     Probado en Chromium sin pantalla contra un servidor simulado.
+     ────────────────────────────────────────────────────────────────
      BITÁCORA OSCG · v2 — 16-sep-2026
      Cambio único: los dos modos ya NO tienen campos distintos.
      El modo define color, título y la columna "Modo" (quién registró);
@@ -73,6 +89,14 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text)
 .dot { width:12px; height:12px; border-radius:50%; border:2px solid rgba(255,255,255,0.2); transition:all .15s; }
 .dot.on { background:var(--gold); border-color:var(--gold); }
 .pin-err { height:15px; font-size:11px; color:#FF6B6B; margin-bottom:14px; text-align:center; }
+#pin-panel .pin-err { height:auto; min-height:15px; line-height:1.35; }
+.clave-in { width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.18); background:rgba(255,255,255,0.06); color:#fff; font-size:16px; font-family:'DM Sans',sans-serif; outline:none; text-align:center; letter-spacing:.03em; margin-bottom:8px; }
+.clave-in:focus { border-color:rgba(255,255,255,0.45); }
+.clave-ver { margin:2px 0 8px; font-size:12px; color:rgba(255,255,255,0.45); cursor:pointer; }
+.clave-btn { width:100%; padding:14px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; }
+.clave-btn:disabled { opacity:.55; }
+.lg-olvidar { margin-top:26px; font-size:11px; color:rgba(255,255,255,0.28); cursor:pointer; text-decoration:underline; }
+#lg-aviso { display:none; margin-top:18px; max-width:320px; padding:12px 14px; border-radius:12px; background:rgba(255,107,107,0.12); border:1px solid rgba(255,107,107,0.4); color:#FFB4B4; font-size:12px; text-align:center; line-height:1.4; }
 .pin-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; max-width:260px; }
 .pk { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:12px; height:58px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600; color:#fff; cursor:pointer; user-select:none; transition:all .12s; }
 .pk:active { background:rgba(255,255,255,0.14); transform:scale(0.95); }
@@ -215,20 +239,18 @@ textarea { resize:none; min-height:48px; line-height:1.5; padding-top:2px; }
     <div class="lg-card cir" onclick="askPin('cir')">
       <div class="lg-icon">👨‍⚕️</div><div><h3>Cirujano</h3></div>
     </div>
+    <div class="lg-olvidar" onclick="olvidarClaves()">Cambiar la clave guardada en este teléfono</div>
   </div>
+  <div id="lg-aviso">⚠️ App sin configurar: falta pegar la dirección nueva del script de Google. Avisale a Omar.</div>
   <div id="pin-panel">
     <div class="pin-back" onclick="cancelPin()">← Volver</div>
     <div class="pin-av" id="pin-av">👩‍💼</div>
     <div class="pin-ttl" id="pin-ttl">Asistente</div>
-    <div class="pin-hint">Ingresa tu PIN de 4 dígitos</div>
-    <div class="pin-dots"><span class="dot" id="d0"></span><span class="dot" id="d1"></span><span class="dot" id="d2"></span><span class="dot" id="d3"></span></div>
+    <div class="pin-hint">Escribí tu clave. Solo se pide una vez en este teléfono.</div>
+    <input class="clave-in" id="clave-in" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Clave" onkeydown="if(event.key==='Enter')entrarConClave()">
+    <div class="clave-ver" onclick="verClave()">👁 Ver / ocultar</div>
     <div class="pin-err" id="pin-err"></div>
-    <div class="pin-grid">
-      <div class="pk" onclick="pKey('1')">1</div><div class="pk" onclick="pKey('2')">2</div><div class="pk" onclick="pKey('3')">3</div>
-      <div class="pk" onclick="pKey('4')">4</div><div class="pk" onclick="pKey('5')">5</div><div class="pk" onclick="pKey('6')">6</div>
-      <div class="pk" onclick="pKey('7')">7</div><div class="pk" onclick="pKey('8')">8</div><div class="pk" onclick="pKey('9')">9</div>
-      <div class="pk empty"></div><div class="pk" onclick="pKey('0')">0</div><div class="pk" onclick="pDel()">⌫</div>
-    </div>
+    <button class="clave-btn" id="clave-btn" onclick="entrarConClave()">Entrar</button>
   </div>
 </div>
 
@@ -575,12 +597,25 @@ textarea { resize:none; min-height:48px; line-height:1.5; padding-top:2px; }
 
 <script>
 // ── CONSTANTES ────────────────────────────────────────────────────
-const PINS = { asist:'0121', cir:'2829' };
+// v3: aquí ya NO hay PIN ni clave. La clave la valida el servidor (Apps Script v8)
+// y se guarda únicamente en el teléfono de quien la escribió.
 const ID_KEY = 'osc26';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTGe-3y_MRkZQlbnmJBgVqvnqO-sOk4AoYgHzGEo8paxRg9ucoRVqLlMlZJvTjejpG/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyq5ImSLh_XUu_fS8HroCOZPw0us8fEJzVkBadCDTHjwYfGVSxQFfYIDKqC0U-fUbjV/exec';
+const URL_LISTA = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(SCRIPT_URL);
+const CLAVE_MIN = 12;
+const K_CLAVE     = m => 'oscg_clave_' + m;
+const claveDe     = m => { try { return localStorage.getItem(K_CLAVE(m)) || ''; } catch(e){ return ''; } };
+const guardaClave = (m,c) => { try { localStorage.setItem(K_CLAVE(m), c); } catch(e){} };
+const olvidaClave = m => { try { localStorage.removeItem(K_CLAVE(m)); } catch(e){} };
+// Toda orden al servidor sale por aquí (FormData = petición simple, sin preflight).
+function enviar(obj){
+  const fd = new FormData();
+  fd.append('payload', JSON.stringify(obj));
+  return fetch(SCRIPT_URL, {method:'POST', body:fd}).then(r => r.json());
+}
 
 // ── ESTADO ────────────────────────────────────────────────────────
-let MODE='', SESS=0, pBuf='', pTgt='';
+let MODE='', SESS=0, pTgt='';
 
 // ── FECHA ─────────────────────────────────────────────────────────
 const NOW = new Date();
@@ -616,27 +651,49 @@ function genId(){
   return 'OSCG-'+Date.now();
 }
 
-// ── PIN ───────────────────────────────────────────────────────────
+// ── CLAVE ─────────────────────────────────────────────────────────
+// Se conserva el nombre askPin porque lo llaman las dos tarjetas de entrada.
 function askPin(m){
-  pTgt=m; pBuf='';
+  if(!URL_LISTA){ g('lg-aviso').style.display='block'; return; }
+  pTgt=m;
+  if(claveDe(m)){ setMode(m); return; }          // este teléfono ya tiene su clave
   g('lg-cards').style.display='none';
   g('pin-panel').style.display='flex';
   g('pin-av').textContent  = m==='asist'?'👩‍💼':'👨‍⚕️';
   g('pin-ttl').textContent = m==='asist'?'Asistente':'Cirujano';
   g('pin-err').textContent='';
-  updDots();
+  const i=g('clave-in'); i.value=''; i.type='password'; setTimeout(()=>i.focus(),60);
 }
 function cancelPin(){
-  pBuf=''; g('pin-panel').style.display='none';
+  g('pin-panel').style.display='none';
   g('lg-cards').style.display='flex';
-  g('pin-err').textContent=''; updDots();
+  g('pin-err').textContent=''; g('clave-in').value='';
 }
-function pKey(k){ if(pBuf.length>=4) return; pBuf+=k; updDots(); if(pBuf.length===4) setTimeout(chkPin,120); }
-function pDel(){ pBuf=pBuf.slice(0,-1); updDots(); }
-function updDots(){ for(let i=0;i<4;i++) g('d'+i).classList.toggle('on',i<pBuf.length); }
-function chkPin(){
-  if(pBuf===PINS[pTgt]){ g('pin-panel').style.display='none'; setMode(pTgt); }
-  else { g('pin-err').textContent='PIN incorrecto.'; pBuf=''; updDots(); }
+function verClave(){ const i=g('clave-in'); i.type = (i.type==='password') ? 'text' : 'password'; }
+function entrarConClave(){
+  const c=g('clave-in').value.trim();
+  if(c.length<CLAVE_MIN){ g('pin-err').textContent='La clave tiene '+CLAVE_MIN+' caracteres o más.'; return; }
+  const b=g('clave-btn'); b.disabled=true; b.textContent='Comprobando…';
+  g('pin-err').textContent='';
+  enviar({action:'login', token:c})
+  .then(res=>{
+    if(res && res.status==='ok' && res.modo===pTgt){
+      guardaClave(pTgt,c); g('clave-in').value='';
+      g('pin-panel').style.display='none'; setMode(pTgt);
+    } else if(res && res.status==='ok'){
+      const de = res.modo==='asist' ? 'Asistente' : res.modo==='cir' ? 'Cirujano' : 'otra herramienta';
+      g('pin-err').textContent='Esa clave es de '+de+'. Volvé y elegí ese usuario.';
+    } else {
+      g('pin-err').textContent='Clave incorrecta.';
+    }
+  })
+  .catch(()=>{ g('pin-err').textContent='Sin conexión. La primera vez la clave se comprueba con internet.'; })
+  .finally(()=>{ b.disabled=false; b.textContent='Entrar'; });
+}
+function olvidarClaves(){
+  if(confirm('¿Borrar la clave guardada en este teléfono? Habrá que escribirla de nuevo para entrar.')){
+    olvidaClave('asist'); olvidaClave('cir'); alert('Listo. La próxima vez se pedirá la clave.');
+  }
 }
 
 // ── SET MODE ──────────────────────────────────────────────────────
@@ -648,7 +705,7 @@ function setMode(m){
   g('hdrAv').textContent = m==='asist'?'👩‍💼':'👨‍⚕️';
   g('hdrT').textContent  = m==='asist'?'Bitácora · Asistente':'Bitácora · Cirujano';
   g('tipTxt').innerHTML  = m==='asist'
-    ? '<strong>Asistente</strong> — Registra cada atención. En cirugías, marca si el Dr. fue cirujano o ayudante.'
+    ? '<strong>Asistente</strong> — Registra cada atención del consultorio. Las cirugías y las atenciones de hospital las registra el cirujano.'
     : '<strong>Cirujano</strong> — Registro completo. La fecha del acto es la que manda.';
   g('hdrDate').innerHTML=`${DIAS[NOW.getDay()]}<br>${NOW.getDate()} ${MESES[NOW.getMonth()]} ${NOW.getFullYear()}`;
   g('fecha').value=TODAY;
@@ -656,6 +713,16 @@ function setMode(m){
   // la columna "Modo", que sigue diciendo quien registro.
   document.querySelectorAll('.cir-only').forEach(el=>{ el.style.display=''; });
   initCtr(); peekId(); buildCobro(); updProg();
+  fijarHospital();
+}
+
+// v3: con el usuario Asistente el hospital queda fijo en «Consultorio».
+// Con el usuario Cirujano (o al volver a la pantalla de entrada) se restauran todos.
+function fijarHospital(){
+  const s=g('hosp'); if(!s) return;
+  const soloCons = MODE==='asist';
+  Array.from(s.options).forEach(o=>{ const fuera = soloCons && o.value!=='Consultorio'; o.hidden=fuera; o.disabled=fuera; });
+  if(soloCons && s.value!=='Consultorio'){ s.value='Consultorio'; s.dispatchEvent(new Event('change')); }
 }
 
 // ── CHIPS GENÉRICOS ───────────────────────────────────────────────
@@ -1031,23 +1098,44 @@ function doSubmit(){
     diagnostico:val('dx'), procedimiento:val('proc'),
     colega:val('colega'), observaciones:val('obs'),
   };
-  if(SCRIPT_URL==='TU_URL_APPS_SCRIPT_AQUI'){ SESS++; data.id='OSCG-TEST'; showOk(data,false); peekId(); return; }
-  // Enviar como FormData — Apps Script lo recibe en e.parameter
-  // Sin Content-Type custom = petición "simple" = sin preflight = CORS funciona
-  const fd=new FormData();
-  fd.append('payload', JSON.stringify(data));
-  fetch(SCRIPT_URL, {method:'POST', body:fd})
-  .then(r=>r.json())
+  const btnListo = () => { btn.disabled=false; btn.innerHTML='<span>✅</span> Registrar atención'; };
+  if(!URL_LISTA){ alert('App sin configurar: falta la dirección del script. No se guardó.'); btnListo(); return; }
+  const clave = claveDe(MODE);
+  if(!clave){ claveRechazada(btnListo); return; }
+  enviar(Object.assign({}, data, {token: clave}))
   .then(res=>{
-    data.id = res.id || data.id;
-    SESS++; showOk(data,false); peekId();
+    if(res && res.status==='ok'){
+      data.id = res.id || data.id;
+      SESS++; showOk(data,false); peekId();
+    } else if(res && res.code==='AUTH'){
+      claveRechazada(btnListo);
+    } else {
+      alert('NO se guardó. El servidor respondió: ' + ((res && res.msg) || 'respuesta inesperada') + '\nLos datos siguen en pantalla. Avisale a Omar.');
+      btnListo();
+    }
   })
   .catch(()=>{
-    // Sin internet — guardar local
-    const q=JSON.parse(localStorage.getItem('boff')||'[]');
-    q.push(data); localStorage.setItem('boff',JSON.stringify(q));
-    SESS++; showOk(data,true); peekId();
+    // [20-sep noche] Sin internet = NO se guardó. Se eliminó la cola local: nunca se reenviaba.
+    alert('Sin conexión: NO se guardó. Los datos siguen en pantalla: revisá la señal y tocá «Registrar» otra vez.');
+    btnListo();
   });
+}
+
+// El servidor rechazó la clave de este teléfono (se cambió): se pide la nueva
+// SIN perder lo que está escrito en el formulario, y se reintenta.
+function claveRechazada(btnListo){
+  olvidaClave(MODE);
+  const nueva=(prompt('La clave de este teléfono ya no sirve (se cambió).\nEscribí la clave nueva para guardar esta atención:')||'').trim();
+  if(nueva.length<CLAVE_MIN){
+    alert('Todavía NO se guardó. Los datos siguen en pantalla: pedile la clave nueva a Omar y tocá «Registrar» otra vez.');
+    btnListo(); return;
+  }
+  enviar({action:'login', token:nueva})
+  .then(res=>{
+    if(res && res.status==='ok' && res.modo===MODE){ guardaClave(MODE,nueva); btnListo(); doSubmit(); }
+    else { alert('Esa clave no es válida para este usuario. NO se guardó; los datos siguen en pantalla.'); btnListo(); }
+  })
+  .catch(()=>{ alert('Sin conexión: no se pudo comprobar la clave. NO se guardó; los datos siguen en pantalla.'); btnListo(); });
 }
 
 // ── SUCCESS ───────────────────────────────────────────────────────
@@ -1095,14 +1183,16 @@ function doReset(){
   hide('rol-sec');
   g('fecha').value=TODAY;
   g('btnSub').disabled=false; g('btnSub').innerHTML='<span>✅</span> Registrar atención';
-  buildCobro(); updProg(); window.scrollTo({top:0,behavior:'smooth'});
+  buildCobro(); updProg(); fijarHospital(); window.scrollTo({top:0,behavior:'smooth'});
 }
+
+if(!URL_LISTA){ const av=document.getElementById('lg-aviso'); if(av) av.style.display='block'; }
 
 function goLogin(){
   g('sov').classList.remove('on'); g('app').classList.remove('on');
   g('login').classList.remove('off');
   g('lg-cards').style.display='flex'; g('pin-panel').style.display='none';
-  pBuf=''; pTgt=''; MODE=''; doReset();
+  pTgt=''; MODE=''; doReset();
 }
 </script>
 </body>
